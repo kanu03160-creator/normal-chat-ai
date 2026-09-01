@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Normal Chat</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        /* =========================
+           HEADER
+        ========================= */
+
+        .header {
+            height: 80px;
+            background: #202124;
+            color: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            padding: 0 15px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 26px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header button {
+            background: #343541;
+            color: white;
+            border: none;
+
+            padding: 12px 18px;
+            border-radius: 9px;
+
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .header button:hover {
+            background: #4a4b55;
+        }
+
+        /* =========================
+           CHAT BOX
+        ========================= */
+
+        .chat-box {
+            height: calc(100vh - 160px);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+
+            border-radius: 10px;
+            max-width: 80%;
+
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .user {
+            background: #d9e7ff;
+            margin-left: auto;
+        }
+
+        .bot {
+            background: white;
+            margin-right: auto;
+        }
+
+        /* =========================
+           INPUT
+        ========================= */
+
+        .input-area {
+            height: 80px;
+
+            display: flex;
+            gap: 12px;
+
+            padding: 12px;
+
+            background: #f5f5f5;
+        }
+
+        #message {
+            flex: 1;
+
+            border: 1px solid #ccc;
+            border-radius: 12px;
+
+            padding: 15px;
+
+            font-size: 18px;
+            outline: none;
+        }
+
+        #sendButton {
+            width: 85px;
+
+            border: none;
+            border-radius: 12px;
+
+            background: #202124;
+            color: white;
+
+            font-size: 17px;
+            cursor: pointer;
+        }
+
+        #sendButton:hover {
+            background: #333;
+        }
+
+        #sendButton:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* =========================
+           TYPING DOTS
+        ========================= */
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .typing-dots span {
+            width: 7px;
+            height: 7px;
+
+            background: #555;
+            border-radius: 50%;
+
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+
+            0%,
+            60%,
+            100% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+
+            30% {
+                opacity: 1;
+                transform: translateY(-4px);
+            }
+        }
+
+        /* =========================
+           SIDEBAR
+        ========================= */
+
+        .sidebar {
+            position: fixed;
+
+            left: 0;
+            top: 0;
+
+            width: 370px;
+            max-width: 90vw;
+            height: 100vh;
+
+            background: white;
+
+            border-right: 1px solid #ddd;
+
+            padding: 18px;
+
+            z-index: 2000;
+
+            transform: translateX(-100%);
+
+            transition: transform 0.25s ease;
+
+            overflow-y: auto;
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-header {
+            display: flex;
+
+            justify-content: space-between;
+            align-items: center;
+
+            font-size: 24px;
+
+            margin-bottom: 18px;
+        }
+
+        #closeSidebar {
+            border: none;
+            background: transparent;
+
+            font-size: 28px;
+
+            cursor: pointer;
+        }
+
+        #closeSidebar:hover {
+            opacity: 0.6;
+        }
+
+        .sidebar-new-chat {
+            width: 100%;
+
+            padding: 14px;
+
+            border: none;
+            border-radius: 9px;
+
+            background: #202124;
+            color: white;
+
+            cursor: pointer;
+
+            margin-bottom: 12px;
+
+            font-size: 16px;
+        }
+
+        .sidebar-new-chat:hover {
+            background: #333;
+        }
+
+        /* =========================
+           SEARCH
+        ========================= */
+
+        #historySearch {
+            width: 100%;
+
+            padding: 12px;
+
+            border: 1px solid #ccc;
+
+            border-radius: 9px;
+
+            outline: none;
+
+            margin-bottom: 8px;
+
+            font-size: 16px;
+        }
+
+        #clearHistorySearch {
+            width: 100%;
+
+            padding: 10px;
+
+            border: none;
+
+            border-radius: 9px;
+
+            background: #eee;
+
+            cursor: pointer;
+
+            margin-bottom: 15px;
+
+            font-size: 15px;
+        }
+
+        #clearHistorySearch:hover {
+            background: #ddd;
+        }
+
+        /* =========================
+           SIDEBAR CHAT
+        ========================= */
+
+        .sidebar-chat {
+            display: flex;
+
+            justify-content: space-between;
+            align-items: center;
+
+            gap: 8px;
+
+            padding: 12px;
+
+            margin-bottom: 8px;
+
+            border-radius: 9px;
+
+            background: #f1f1f1;
+
+            cursor: pointer;
+
+            min-height: 52px;
+        }
+
+        .sidebar-chat:hover {
+            background: #e5e5e5;
+        }
+
+        .sidebar-chat.active {
+            background: #d9e7ff;
+            font-weight: bold;
+        }
+
+        .sidebar-chat-title {
+            flex: 1;
+
+            overflow: hidden;
+
+            white-space: nowrap;
+
+            text-overflow: ellipsis;
+
+            cursor: pointer;
+        }
+
+        .sidebar-actions {
+            display: flex;
+
+            gap: 4px;
+
+            flex-shrink: 0;
+        }
+
+        .sidebar-rename,
+        .sidebar-delete {
+            border: none;
+
+            background: transparent;
+
+            cursor: pointer;
+
+            font-size: 17px;
+
+            padding: 5px;
+
+            border-radius: 5px;
+        }
+
+        .sidebar-rename:hover,
+        .sidebar-delete:hover {
+            background: #d5d5d5;
+        }
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media (max-width: 600px) {
+
+            .header h1 {
+                font-size: 21px;
+            }
+
+            .header button {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            #sendButton {
+                width: 75px;
+            }
+        }
+
+    </style>
+</head>
+
+
+<body>
+
+    <!-- =========================
+         SIDEBAR
+    ========================= -->
+
+    <div id="sidebar" class="sidebar">
+
+        <div class="sidebar-header">
+
+            <b>Chat History</b>
+
+            <button
+                id="closeSidebar"
+                type="button"
+            >
+                ✕
+            </button>
+
+        </div>
+
+
+        <button
+            id="sidebarNewChat"
+            class="sidebar-new-chat"
+            type="button"
+        >
+            + New Chat
+        </button>
+
+
+        <input
+            type="text"
+            id="historySearch"
+            placeholder="Search chats..."
+            autocomplete="off"
+        >
+
+
+        <button
+            id="clearHistorySearch"
+            type="button"
+        >
+            ✕ Clear Search
+        </button>
+
+
+        <div id="sidebarHistory"></div>
+
+    </div>
+
+
+    <!-- =========================
+         HEADER
+    ========================= -->
+
+    <div class="header">
+
+        <h1>Normal Chat</h1>
+
+        <div class="header-buttons">
+
+            <button
+                id="historyButton"
+                type="button"
+            >
+                History
+            </button>
+
+
+            <button
+                id="newChatButton"
+                type="button"
+            >
+                New Chat
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         CHAT
+    ========================= -->
+
+    <div
+        id="chatBox"
+        class="chat-box"
+    ></div>
+
+
+    <!-- =========================
+         INPUT
+    ========================= -->
+
+    <div class="input-area">
+
+        <input
+            type="text"
+            id="message"
+            placeholder="Type your message..."
+            autocomplete="off"
+        >
+
+
+        <button
+            id="sendButton"
+            type="button"
+        >
+            Send
+        </button>
+
+    </div>
+
+
+    <script>
+
+        /* =================================
+           CONFIG
+        ================================= */
+
+        const API_URL = "http://127.0.0.1:5000";
+
+
+        /* =================================
+           VARIABLES
+        ================================= */
+
+        let conversationHistory = [];
+
+
+        const messageInput =
+            document.getElementById("message");
+
+        const sendButton =
+            document.getElementById("sendButton");
+
+        const chatBox =
+            document.getElementById("chatBox");
+
+        const newChatButton =
+            document.getElementById("newChatButton");
+
+        const historyButton =
+            document.getElementById("historyButton");
+
+        const sidebar =
+            document.getElementById("sidebar");
+
+        const closeSidebar =
+            document.getElementById("closeSidebar");
+
+        const sidebarNewChat =
+            document.getElementById("sidebarNewChat");
+
+        const sidebarHistory =
+            document.getElementById("sidebarHistory");
+
+        const historySearch =
+            document.getElementById("historySearch");
+
+        const clearHistorySearch =
+            document.getElementById("clearHistorySearch");
+
+
+        /* =================================
+           ESCAPE HTML
+        ================================= */
+
+        function escapeHtml(text) {
+
+            const div =
+                document.createElement("div");
+
+            div.textContent =
+                String(text);
+
+            return div.innerHTML;
+        }
+
+
+        /* =================================
+           SAVE CURRENT CHAT
+        ================================= */
+
+        function saveCurrentChat() {
+
+            localStorage.setItem(
+                "normalChatCurrent",
+                JSON.stringify(conversationHistory)
+            );
+        }
+
+
+        /* =================================
+           LOAD CURRENT CHAT
+        ================================= */
+
+        function loadCurrentChat() {
+
+            const savedChat =
+                localStorage.getItem(
+                    "normalChatCurrent"
+                );
+
+            if (!savedChat) {
+                return;
+            }
+
+            try {
+
+                const parsed =
+                    JSON.parse(savedChat);
+
+                if (!Array.isArray(parsed)) {
+                    conversationHistory = [];
+                    return;
+                }
+
+                conversationHistory = parsed;
+
+                chatBox.innerHTML = "";
+
+                conversationHistory.forEach(
+                    function (msg) {
+
+                        addMessageToScreen(
+                            msg.role,
+                            msg.content
+                        );
+
+                    }
+                );
+
+                chatBox.scrollTop =
+                    chatBox.scrollHeight;
+
+            } catch (error) {
+
+                console.error(
+                    "Current chat load error:",
+                    error
+                );
+
+                conversationHistory = [];
+
+                localStorage.removeItem(
+                    "normalChatCurrent"
+                );
+            }
+        }
+
+
+        /* =================================
+           ADD MESSAGE
+        ================================= */
+
+        function addMessageToScreen(
+            role,
+            content
+        ) {
+
+            const div =
+                document.createElement("div");
+
+            div.className =
+                "message " +
+                (
+                    role === "user"
+                        ? "user"
+                        : "bot"
+                );
+
+            const name =
+                role === "user"
+                    ? "You"
+                    : "Normal Chat";
+
+            div.innerHTML = `
+                <b>${name}:</b><br>
+                ${escapeHtml(content)}
+            `;
+
+            chatBox.appendChild(div);
+        }
+
+
+        /* =================================
+           SEND MESSAGE
+        ================================= */
+
+        async function sendMessage() {
+
+            const message =
+                messageInput.value.trim();
+
+            if (!message) {
+                return;
+            }
+
+
+            sendButton.disabled = true;
+
+
+            /* USER MESSAGE */
+
+            conversationHistory.push({
+                role: "user",
+                content: message
+            });
+
+            addMessageToScreen(
+                "user",
+                message
+            );
+
+            messageInput.value = "";
+
+            saveCurrentChat();
+
+
+            /* TYPING */
+
+            const thinking =
+                document.createElement("div");
+
+            thinking.className =
+                "message bot";
+
+            thinking.id =
+                "thinking";
+
+            thinking.innerHTML = `
+                <b>Normal Chat:</b><br>
+
+                <span class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            `;
+
+            chatBox.appendChild(thinking);
+
+            chatBox.scrollTop =
+                chatBox.scrollHeight;
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/chat`,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                message: message,
+                                history:
+                                    conversationHistory
+                            })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (thinking) {
+                    thinking.remove();
+                }
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "Backend error"
+                    );
+                }
+
+
+                const reply =
+                    String(data.reply || "").trim();
+
+
+                if (!reply) {
+
+                    throw new Error(
+                        "AI ne empty reply diya."
+                    );
+                }
+
+
+                /* BOT MESSAGE */
+
+                conversationHistory.push({
+                    role: "assistant",
+                    content: reply
+                });
+
+                addMessageToScreen(
+                    "assistant",
+                    reply
+                );
+
+                saveCurrentChat();
+
+
+                chatBox.scrollTop =
+                    chatBox.scrollHeight;
+
+
+            } catch (error) {
+
+                if (thinking) {
+                    thinking.remove();
+                }
+
+
+                addMessageToScreen(
+                    "assistant",
+                    "Error: " +
+                    error.message
+                );
+
+
+                console.error(
+                    "Chat error:",
+                    error
+                );
+
+            } finally {
+
+                sendButton.disabled = false;
+
+                messageInput.focus();
+            }
+        }
+
+
+        /* =================================
+           NEW CHAT
+        ================================= */
+
+        async function newChat() {
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/new-chat`,
+                        {
+                            method: "POST"
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "New Chat error"
+                    );
+                }
+
+
+                conversationHistory = [];
+
+
+                localStorage.removeItem(
+                    "normalChatCurrent"
+                );
+
+
+                chatBox.innerHTML = "";
+
+                messageInput.value = "";
+
+                sidebar.classList.remove(
+                    "open"
+                );
+
+                messageInput.focus();
+
+
+            } catch (error) {
+
+                console.error(
+                    "New Chat error:",
+                    error
+                );
+
+                alert(
+                    "New Chat nahi bana: " +
+                    error.message
+                );
+            }
+        }
+
+
+        /* =================================
+           SHOW SIDEBAR
+        ================================= */
+
+        async function showSidebar() {
+
+            sidebar.classList.add("open");
+
+            sidebarHistory.innerHTML =
+                "<p>Loading...</p>";
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/history`
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "History load failed"
+                    );
+                }
+
+
+                sidebarHistory.innerHTML = "";
+
+
+                if (
+                    !Array.isArray(data.history) ||
+                    data.history.length === 0
+                ) {
+
+                    sidebarHistory.innerHTML =
+                        "<p>No chats yet.</p>";
+
+                    return;
+                }
+
+
+                /*
+                 * Latest chat first.
+                 */
+
+                data.history
+                    .slice()
+                    .reverse()
+                    .forEach(
+                        function (chat, reverseIndex) {
+
+                            /*
+                             * IMPORTANT:
+                             * This is the real index
+                             * inside backend history.
+                             */
+
+                            const realIndex =
+                                data.history.length -
+                                1 -
+                                reverseIndex;
+
+
+                            createHistoryItem(
+                                chat,
+                                realIndex
+                            );
+
+                        }
+                    );
+
+
+            } catch (error) {
+
+                sidebarHistory.innerHTML =
+                    `<p>${escapeHtml(
+                        error.message
+                    )}</p>`;
+
+
+                console.error(
+                    "History error:",
+                    error
+                );
+            }
+        }
+
+
+        /* =================================
+           CREATE HISTORY ITEM
+        ================================= */
+
+        function createHistoryItem(
+            chat,
+            realIndex
+        ) {
+
+            const item =
+                document.createElement("div");
+
+            item.className =
+                "sidebar-chat";
+
+
+            const messages =
+                Array.isArray(chat.messages)
+                    ? chat.messages
+                    : [];
+
+
+            const firstMessage =
+                messages.find(
+                    function (msg) {
+
+                        return (
+                            msg &&
+                            msg.role === "user"
+                        );
+
+                    }
+                );
+
+
+            const defaultTitle =
+                firstMessage &&
+                firstMessage.content
+                    ? firstMessage.content
+                    : "New Chat";
+
+
+            const currentTitle =
+                chat.title &&
+                String(chat.title).trim()
+                    ? chat.title
+                    : defaultTitle;
+
+
+            /* =================================
+               TITLE
+            ================================= */
+
+            const title =
+                document.createElement("span");
+
+            title.className =
+                "sidebar-chat-title";
+
+            title.textContent =
+                currentTitle;
+
+
+            /* =================================
+               ACTIONS
+            ================================= */
+
+            const actions =
+                document.createElement("div");
+
+            actions.className =
+                "sidebar-actions";
+
+
+            /* RENAME */
+
+            const renameButton =
+                document.createElement("button");
+
+            renameButton.type =
+                "button";
+
+            renameButton.className =
+                "sidebar-rename";
+
+            renameButton.title =
+                "Rename";
+
+            renameButton.textContent =
+                "✏️";
+
+
+            /* DELETE */
+
+            const deleteButton =
+                document.createElement("button");
+
+            deleteButton.type =
+                "button";
+
+            deleteButton.className =
+                "sidebar-delete";
+
+            deleteButton.title =
+                "Delete";
+
+            deleteButton.textContent =
+                "🗑️";
+
+
+            actions.appendChild(
+                renameButton
+            );
+
+            actions.appendChild(
+                deleteButton
+            );
+
+
+            item.appendChild(
+                title
+            );
+
+            item.appendChild(
+                actions
+            );
+
+
+            /* =================================
+               OPEN CHAT
+            ================================= */
+
+            item.addEventListener(
+                "click",
+                function () {
+
+                    document
+                        .querySelectorAll(
+                            ".sidebar-chat"
+                        )
+                        .forEach(
+                            function (chatItem) {
+
+                                chatItem.classList
+                                    .remove(
+                                        "active"
+                                    );
+                            }
+                        );
+
+
+                    item.classList.add(
+                        "active"
+                    );
+
+
+                    openHistoryChat(
+                        chat
+                    );
+
+
+                    sidebar.classList.remove(
+                        "open"
+                    );
+                }
+            );
+
+
+            /* =================================
+               RENAME
+            ================================= */
+
+            renameButton.addEventListener(
+                "click",
+                async function (event) {
+
+                    event.preventDefault();
+
+                    event.stopPropagation();
+
+
+                    const newName =
+                        prompt(
+                            "Chat ka naya naam:",
+                            currentTitle
+                        );
+
+
+                    if (newName === null) {
+                        return;
+                    }
+
+
+                    const trimmedName =
+                        newName.trim();
+
+
+                    if (!trimmedName) {
+
+                        alert(
+                            "Naam empty nahi ho sakta."
+                        );
+
+                        return;
+                    }
+
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                `${API_URL}/history/${realIndex}/rename`,
+                                {
+                                    method: "POST",
+
+                                    headers: {
+                                        "Content-Type":
+                                            "application/json"
+                                    },
+
+                                    body: JSON.stringify({
+                                        name: trimmedName
+                                    })
+                                }
+                            );
+
+
+                        const result =
+                            await response.json();
+
+
+                        if (!response.ok) {
+
+                            throw new Error(
+                                result.error ||
+                                "Rename failed"
+                            );
+                        }
+
+
+                        await showSidebar();
+
+
+                    } catch (error) {
+
+                        console.error(
+                            "Rename error:",
+                            error
+                        );
+
+
+                        alert(
+                            "Rename nahi hua: " +
+                            error.message
+                        );
+                    }
+                }
+            );
+
+
+            /* =================================
+               DELETE
+            ================================= */
+
+            deleteButton.addEventListener(
+                "click",
+                async function (event) {
+
+                    event.preventDefault();
+
+                    event.stopPropagation();
+
+
+                    const confirmDelete =
+                        confirm(
+                            "Kya ye chat delete karni hai?"
+                        );
+
+
+                    if (!confirmDelete) {
+                        return;
+                    }
+
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                `${API_URL}/history/${realIndex}`,
+                                {
+                                    method: "DELETE"
+                                }
+                            );
+
+
+                        const result =
+                            await response.json();
+
+
+                        if (!response.ok) {
+
+                            throw new Error(
+                                result.error ||
+                                "Delete failed"
+                            );
+                        }
+
+
+                        await showSidebar();
+
+
+                    } catch (error) {
+
+                        console.error(
+                            "Delete error:",
+                            error
+                        );
+
+
+                        alert(
+                            "Chat delete nahi hui: " +
+                            error.message
+                        );
+                    }
+                }
+            );
+
+
+            sidebarHistory.appendChild(
+                item
+            );
+        }
+
+
+        /* =================================
+           OPEN OLD CHAT
+        ================================= */
+
+        function openHistoryChat(chat) {
+
+            conversationHistory =
+                Array.isArray(chat.messages)
+                    ? chat.messages
+                    : [];
+
+
+            chatBox.innerHTML = "";
+
+
+            conversationHistory.forEach(
+                function (message) {
+
+                    if (
+                        !message ||
+                        !message.role
+                    ) {
+                        return;
+                    }
+
+
+                    addMessageToScreen(
+                        message.role,
+                        message.content || ""
+                    );
+                }
+            );
+
+
+            saveCurrentChat();
+
+
+            chatBox.scrollTop =
+                chatBox.scrollHeight;
+        }
+
+
+        /* =================================
+           SEARCH HISTORY
+        ================================= */
+
+        historySearch.addEventListener(
+            "input",
+            function () {
+
+                const searchText =
+                    historySearch.value
+                        .toLowerCase()
+                        .trim();
+
+
+                document
+                    .querySelectorAll(
+                        ".sidebar-chat"
+                    )
+                    .forEach(
+                        function (chatItem) {
+
+                            const text =
+                                chatItem.innerText
+                                    .toLowerCase();
+
+
+                            chatItem.style.display =
+                                text.includes(
+                                    searchText
+                                )
+                                    ? "flex"
+                                    : "none";
+                        }
+                    );
+            }
+        );
+
+
+        /* =================================
+           CLEAR SEARCH
+        ================================= */
+
+        clearHistorySearch.addEventListener(
+            "click",
+            function () {
+
+                historySearch.value = "";
+
+
+                document
+                    .querySelectorAll(
+                        ".sidebar-chat"
+                    )
+                    .forEach(
+                        function (chatItem) {
+
+                            chatItem.style.display =
+                                "flex";
+                        }
+                    );
+            }
+        );
+
+
+        /* =================================
+           BUTTON EVENTS
+        ================================= */
+
+        sendButton.addEventListener(
+            "click",
+            sendMessage
+        );
+
+
+        newChatButton.addEventListener(
+            "click",
+            newChat
+        );
+
+
+        sidebarNewChat.addEventListener(
+            "click",
+            newChat
+        );
+
+
+        historyButton.addEventListener(
+            "click",
+            showSidebar
+        );
+
+
+        closeSidebar.addEventListener(
+            "click",
+            function () {
+
+                sidebar.classList.remove(
+                    "open"
+                );
+            }
+        );
+
+
+        /* =================================
+           ENTER KEY
+        ================================= */
+
+        messageInput.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (
+                    event.key === "Enter" &&
+                    !event.shiftKey
+                ) {
+
+                    event.preventDefault();
+
+                    sendMessage();
+                }
+            }
+        );
+
+
+        /* =================================
+           START
+        ================================= */
+
+        loadCurrentChat();
+
+        messageInput.focus();
+
+    </script>
+
+</body>
+
+</html>
