@@ -2,7 +2,7 @@
 
 from pyexpat.errors import messages
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import requests
 from google import genai
@@ -246,12 +246,10 @@ def personal_answer(message):
 
 @app.route("/")
 def home():
-
-    return jsonify({
-        "app": "Normal Chat",
-        "status": "Backend is running"
-    })
-
+    return send_from_directory(
+        "frontend",
+        "index.html"
+    )
 
 # ==========================================
 # CHAT
