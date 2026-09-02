@@ -40,7 +40,7 @@ client = genai.Client()
 # ==========================================
 
 conversation_history = []
-memory = load_memory()
+memory = {}
 
 
 # ==========================================
