@@ -1,30 +1,26 @@
 import json
 import os
 
-MEMORY_FILE = os.path.join(
-    os.path.dirname(__file__),
-    "..",
-    "data",
-    "memory.json"
-)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "data"))
+MEMORY_FILE = os.path.join(DATA_DIR, "memory.json")
 
 
 def load_memory():
+    os.makedirs(DATA_DIR, exist_ok=True)
+
     if not os.path.exists(MEMORY_FILE):
         return {}
 
     try:
         with open(MEMORY_FILE, "r", encoding="utf-8") as file:
             return json.load(file)
-    except:
+    except Exception:
         return {}
 
 
 def save_memory(memory):
-    os.makedirs(
-        os.path.dirname(MEMORY_FILE),
-        exist_ok=True
-    )
+    os.makedirs(DATA_DIR, exist_ok=True)
 
     with open(MEMORY_FILE, "w", encoding="utf-8") as file:
         json.dump(
@@ -44,5 +40,4 @@ def update_memory(key, value):
         return
 
     memory[key] = value
-
     save_memory(memory)
