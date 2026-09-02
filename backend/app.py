@@ -1,28 +1,43 @@
-
-
-from pyexpat.errors import messages
-
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import requests
 from google import genai
 import re
+import os
 
 from chat_history import add_chat, load_history, delete_chat, rename_chat
 from memory import load_memory, update_memory
-import os
 
-os.makedirs(
-    os.path.join(os.path.dirname(__file__), "..", "data"),
-    exist_ok=True
-)
+
+# ==========================================
+# DATA FOLDER
+# ==========================================
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "..", "data")
+
+os.makedirs(DATA_DIR, exist_ok=True)
+
+
+# ==========================================
+# APP
+# ==========================================
 
 app = Flask(__name__)
 CORS(app)
 
+
+# ==========================================
+# GEMINI
+# ==========================================
+
 MODEL = "gemini-3.6-flash"
 
 client = genai.Client()
+
+
+# ==========================================
+# MEMORY
+# ==========================================
 
 conversation_history = []
 memory = load_memory()
@@ -34,13 +49,16 @@ memory = load_memory()
 
 def clean_value(value):
     value = str(value).strip()
+
     value = re.sub(
         r"\s+(hai|hain|is)$",
         "",
         value,
         flags=re.IGNORECASE
     )
+
     value = value.rstrip(".,!?").strip()
+
     return value
 
 
@@ -157,12 +175,12 @@ def detect_memory(message):
                 "java",
                 "javascript"
             ]:
-
                 save_memory("favorite", value)
 
             return
 
         save_memory(key, value)
+
         return
 
 
@@ -173,7 +191,12 @@ def detect_memory(message):
 def personal_answer(message):
 
     text = message.lower().strip()
-    text = re.sub(r"[?.!]", "", text)
+
+    text = re.sub(
+        r"[?.!]",
+        "",
+        text
+    )
 
     # AI NAME
     if any(x in text for x in [
@@ -190,6 +213,7 @@ def personal_answer(message):
         "my name kya hai",
         "what is my name"
     ]):
+
         if "name" in memory:
             return f"Tumhara naam {memory['name']} hai."
 
@@ -197,6 +221,7 @@ def personal_answer(message):
 
     # FAVORITE GAME
     if "mera favorite game kya hai" in text:
+
         if "favorite game" in memory:
             return f"Tumhara favorite game {memory['favorite game']} hai."
 
@@ -204,6 +229,7 @@ def personal_answer(message):
 
     # FAVORITE COLOR
     if "mera favorite color kya hai" in text:
+
         if "favorite color" in memory:
             return f"Tumhara favorite color {memory['favorite color']} hai."
 
@@ -211,6 +237,7 @@ def personal_answer(message):
 
     # FAVORITE
     if "mera favorite kya hai" in text:
+
         if "favorite" in memory:
             return f"Tumhe {memory['favorite']} pasand hai."
 
@@ -223,6 +250,7 @@ def personal_answer(message):
         "mere college ka kya naam hai",
         "what is my college"
     ]):
+
         if "college" in memory:
             return f"Tumhara college {memory['college']} hai."
 
@@ -230,6 +258,7 @@ def personal_answer(message):
 
     # GOAL
     if "mera goal kya hai" in text:
+
         if "goal" in memory:
             return f"Tumhara goal {memory['goal']} hai."
 
@@ -237,6 +266,7 @@ def personal_answer(message):
 
     # CITY
     if "meri city kya hai" in text:
+
         if "city" in memory:
             return f"Tumhari city {memory['city']} hai."
 
@@ -251,15 +281,25 @@ def personal_answer(message):
 
 @app.route("/")
 def home():
+
     return send_from_directory(
-        "frontend",
+        os.path.join(BASE_DIR, "frontend"),
         "index.html"
     )
+
+
+# ==========================================
+# HEALTH CHECK
+# ==========================================
+
 @app.route("/health")
 def health():
+
     return jsonify({
         "status": "ok"
     })
+
+
 # ==========================================
 # CHAT
 # ==========================================
@@ -271,16 +311,20 @@ def chat():
 
     try:
 
-        data = request.get_json()
+        data = request.get_json(silent=True)
 
         if not data or "message" not in data:
+
             return jsonify({
                 "error": "Message is missing"
             }), 400
 
-        message = str(data["message"]).strip()
+        message = str(
+            data["message"]
+        ).strip()
 
         if not message:
+
             return jsonify({
                 "error": "Message is empty"
             }), 400
@@ -290,7 +334,10 @@ def chat():
             []
         )
 
+        # ======================================
         # PERSONAL QUESTION
+        # ======================================
+
         direct_reply = personal_answer(message)
 
         if direct_reply:
@@ -309,17 +356,30 @@ def chat():
                 "reply": direct_reply
             })
 
+
+        # ======================================
         # MEMORY
+        # ======================================
+
         detect_memory(message)
+
 
         # ======================================
         # MEMORY TEXT
         # ======================================
 
-        memory_text = ""
+        memory_lines = []
 
         for key, value in memory.items():
-            memory_text += f"{key}: {value}\n"
+
+            memory_lines.append(
+                f"{key}: {value}"
+            )
+
+        memory_text = "\n".join(
+            memory_lines
+        )
+
 
         # ======================================
         # SYSTEM PROMPT
@@ -342,88 +402,83 @@ User information:
 {memory_text}
 """
 
+
         # ======================================
-        # OLLAMA MESSAGES
+        # CONVERSATION
         # ======================================
 
-        messages = [
-            {
-                "role": "system",
-                "content": system_prompt
-            }
-        ]
+        conversation_messages = []
 
         if history_from_frontend:
 
-    # Frontend history me current user message already hai,
-    # isliye last message ko dobara add nahi karna.
-          messages.extend(
-        history_from_frontend[-11:-1]
-      )
+            previous_messages = history_from_frontend[-7:-1]
+
+            for msg in previous_messages:
+
+                role = msg.get("role")
+
+                content = msg.get("content")
+
+                if role in ["user", "assistant"] and content:
+
+                    conversation_messages.append(
+                        f"{role}: {content}"
+                    )
 
         else:
 
-          messages.extend(
-        conversation_history[-10:]
-    )
-        messages.append({
-            "role": "user",
-            "content": message
-        })
- 
-                # ======================================
-        # GEMINI
+            previous_messages = conversation_history[-6:]
+
+            for msg in previous_messages:
+
+                role = msg.get("role")
+
+                content = msg.get("content")
+
+                if role in ["user", "assistant"] and content:
+
+                    conversation_messages.append(
+                        f"{role}: {content}"
+                    )
+
+
+        conversation_text = "\n".join(
+            conversation_messages
+        )
+
+
+        # ======================================
+        # GEMINI PROMPT
         # ======================================
 
-        prompt = system_prompt + "\n\nConversation:\n"
+        prompt = f"""
+{system_prompt}
 
-        for msg in messages[1:]:
-            role = msg["role"]
-            content = msg["content"]
+Conversation:
+{conversation_text}
 
-            prompt += f"{role}: {content}\n"
+user: {message}
+"""
 
-        max_retries = 3
-        reply = None
 
-        for attempt in range(max_retries):
+        # ======================================
+        # GEMINI REQUEST
+        # ======================================
 
-            try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=prompt
+        )
 
-                response = client.models.generate_content(
-                    model=MODEL,
-                    contents=prompt
-                )
-
-                reply = response.text.strip()
-
-                if reply:
-                    break
-
-            except Exception as gemini_error:
-
-                error_text = str(gemini_error)
-
-                print(
-                    f"Gemini attempt {attempt + 1} failed:",
-                    error_text
-                )
-
-                if "503" in error_text:
-
-                    import time
-
-                    time.sleep(2 ** attempt)
-
-                else:
-
-                    raise
+        reply = (response.text or "").strip()
 
         if not reply:
 
             raise Exception(
-                "Gemini abhi available nahi hai. Thodi der baad try karo."
+                "AI ne empty response diya."
             )
+
+
         # ======================================
         # SAVE CONVERSATION
         # ======================================
@@ -438,13 +493,22 @@ User information:
             "content": reply
         })
 
+
+        # ======================================
+        # RESPONSE
+        # ======================================
+
         return jsonify({
             "reply": reply
         })
 
+
     except Exception as error:
 
-        print("Backend error:", error)
+        print(
+            "Backend error:",
+            error
+        )
 
         return jsonify({
             "error": str(error)
@@ -480,23 +544,35 @@ def new_chat():
 
     global conversation_history
 
-    # Purani conversation ko history me save karo
-    if conversation_history:
+    try:
 
-        add_chat(conversation_history)
+        if conversation_history:
 
-    conversation_history = []
+            add_chat(
+                conversation_history
+            )
 
-    return jsonify({
-        "message": "New chat started"
-    })
+        conversation_history = []
+
+        return jsonify({
+            "message": "New chat started"
+        })
+
+    except Exception as error:
+
+        return jsonify({
+            "error": str(error)
+        }), 500
 
 
 # ==========================================
 # DELETE HISTORY
 # ==========================================
 
-@app.route("/history/<int:index>", methods=["DELETE"])
+@app.route(
+    "/history/<int:index>",
+    methods=["DELETE"]
+)
 def delete_history(index):
 
     try:
@@ -532,7 +608,9 @@ def rename_history(index):
 
     try:
 
-        data = request.get_json()
+        data = request.get_json(
+            silent=True
+        )
 
         if not data:
 
@@ -540,12 +618,10 @@ def rename_history(index):
                 "error": "Request data missing"
             }), 400
 
-        # Frontend "name" bhej raha hai
-        # Backend "title" bhi accept karega
-
         title = data.get("name")
 
         if title is None:
+
             title = data.get("title")
 
         if title is None:
@@ -554,7 +630,9 @@ def rename_history(index):
                 "error": "Name is missing"
             }), 400
 
-        title = str(title).strip()
+        title = str(
+            title
+        ).strip()
 
         if not title:
 
@@ -582,7 +660,10 @@ def rename_history(index):
 
     except Exception as error:
 
-        print("Rename error:", error)
+        print(
+            "Rename error:",
+            error
+        )
 
         return jsonify({
             "error": str(error)
@@ -595,8 +676,15 @@ def rename_history(index):
 
 if __name__ == "__main__":
 
+    port = int(
+        os.environ.get(
+            "PORT",
+            5000
+        )
+    )
+
     app.run(
-        host="127.0.0.1",
-        port=5000,
-        debug=True
+        host="0.0.0.0",
+        port=port,
+        debug=False
     )
