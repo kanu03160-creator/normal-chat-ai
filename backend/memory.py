@@ -8,6 +8,7 @@ MEMORY_FILE = os.path.join(
     "memory.json"
 )
 
+
 def load_memory():
     if not os.path.exists(MEMORY_FILE):
         return {}
@@ -18,9 +19,21 @@ def load_memory():
     except:
         return {}
 
+
 def save_memory(memory):
+    os.makedirs(
+        os.path.dirname(MEMORY_FILE),
+        exist_ok=True
+    )
+
     with open(MEMORY_FILE, "w", encoding="utf-8") as file:
-        json.dump(memory, file, ensure_ascii=False, indent=4)
+        json.dump(
+            memory,
+            file,
+            ensure_ascii=False,
+            indent=4
+        )
+
 
 def update_memory(key, value):
     memory = load_memory()
