@@ -250,7 +250,11 @@ def home():
         "frontend",
         "index.html"
     )
-
+@app.route("/health")
+def health():
+    return jsonify({
+        "status": "ok"
+    })
 # ==========================================
 # CHAT
 # ==========================================
