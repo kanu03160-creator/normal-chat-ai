@@ -10,7 +10,12 @@ import re
 
 from chat_history import add_chat, load_history, delete_chat, rename_chat
 from memory import load_memory, update_memory
+import os
 
+os.makedirs(
+    os.path.join(os.path.dirname(__file__), "..", "data"),
+    exist_ok=True
+)
 
 app = Flask(__name__)
 CORS(app)
