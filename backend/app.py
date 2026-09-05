@@ -1,5 +1,7 @@
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
+import json
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, request, jsonify, send_from_directory, session
+
 from google import genai
 import re
 import os
@@ -14,7 +16,23 @@ from memory import load_memory, update_memory
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "..", "data")
+USERS_FILE = os.path.join(DATA_DIR, "users.json")
 
+
+def load_users():
+    if not os.path.exists(USERS_FILE):
+        return []
+
+    try:
+        with open(USERS_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except Exception:
+        return []
+
+
+def save_users(users):
+    with open(USERS_FILE, "w", encoding="utf-8") as file:
+        json.dump(users, file, indent=4, ensure_ascii=False)
 os.makedirs(DATA_DIR, exist_ok=True)
 
 
@@ -22,10 +40,16 @@ os.makedirs(DATA_DIR, exist_ok=True)
 # APP
 # ==========================================
 
+SECRET_KEY = os.environ.get("FLASK_SECRET_KEY")
+
+if not SECRET_KEY:
+    raise RuntimeError("FLASK_SECRET_KEY is not set")
+
 app = Flask(__name__)
-CORS(app)
-
-
+app.secret_key = SECRET_KEY
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("RENDER") == "true"
 # ==========================================
 # GEMINI
 # ==========================================
@@ -39,8 +63,7 @@ client = genai.Client()
 # MEMORY
 # ==========================================
 
-conversation_history = []
-memory = {}
+
 
 
 # ==========================================
@@ -62,23 +85,31 @@ def clean_value(value):
     return value
 
 
-def save_memory(key, value):
+def save_memory(key, value, user_memory):
+    username = session.get("username")
+
+    if not username:
+        return
+
     value = clean_value(value)
 
     if not value:
         return
 
-    update_memory(key, value)
-    memory[key] = value
+    update_memory(
+        key,
+        value,
+        username
+    )
+
+    user_memory[key] = value
 
     print(f"Memory saved: {key} = {value}")
-
-
 # ==========================================
 # AUTOMATIC MEMORY DETECTION
 # ==========================================
 
-def detect_memory(message):
+def detect_memory(message, user_memory):
 
     text = message.strip()
 
@@ -105,12 +136,12 @@ def detect_memory(message):
         ),
 
         (
-            r"^mera favorite game\s+(.+?)(?:\s+hai)?[.!?]?$",
+            r"^(?:mera|meri)\s+(?:favorite|favourite)\s+game\s+(.+?)(?:\s+hai)?[.!?]?$",
             "favorite game"
         ),
 
         (
-            r"^my favorite game is\s+(.+?)[.!?]?$",
+            r"^my\s+(?:favorite|favourite)\s+game\s+is\s+(.+?)[.!?]?$",
             "favorite game"
         ),
 
@@ -120,17 +151,17 @@ def detect_memory(message):
         ),
 
         (
-            r"^mera favorite color\s+(.+?)(?:\s+hai)?[.!?]?$",
+            r"^(?:mera|meri)\s+(?:favorite|favourite)\s+color\s+(.+?)(?:\s+hai)?[.!?]?$",
             "favorite color"
         ),
 
         (
-            r"^my favorite color is\s+(.+?)[.!?]?$",
+            r"^my\s+(?:favorite|favourite)\s+color\s+is\s+(.+?)[.!?]?$",
             "favorite color"
         ),
 
         (
-            r"^mera favorite programming language\s+(.+?)(?:\s+hai)?[.!?]?$",
+            r"^(?:mera|meri)\s+(?:favorite|favourite)\s+programming language\s+(.+?)(?:\s+hai)?[.!?]?$",
             "favorite programming language"
         ),
 
@@ -163,32 +194,27 @@ def detect_memory(message):
 
         if key == "preference":
 
-            value_lower = value.lower()
-
-            if value_lower in [
-                "cricket",
-                "football",
-                "gaming",
-                "coding",
-                "programming",
-                "python",
-                "java",
-                "javascript"
-            ]:
-                save_memory("favorite", value)
+            save_memory(
+                "favorite",
+                value,
+                user_memory
+            )
 
             return
 
-        save_memory(key, value)
+        save_memory(
+            key,
+            value,
+            user_memory
+        )
 
         return
-
 
 # ==========================================
 # PERSONAL QUESTIONS
 # ==========================================
 
-def personal_answer(message):
+def personal_answer(message, user_memory):
 
     text = message.lower().strip()
 
@@ -214,32 +240,32 @@ def personal_answer(message):
         "what is my name"
     ]):
 
-        if "name" in memory:
-            return f"Tumhara naam {memory['name']} hai."
+        if "name" in user_memory:
+            return f"Tumhara naam {user_memory['name']} hai."
 
         return "Mujhe abhi tumhara naam nahi pata."
 
     # FAVORITE GAME
     if "mera favorite game kya hai" in text:
 
-        if "favorite game" in memory:
-            return f"Tumhara favorite game {memory['favorite game']} hai."
+        if "favorite game" in user_memory:
+            return f"Tumhara favorite game {user_memory['favorite game']} hai."
 
         return "Mujhe abhi tumhara favorite game nahi pata."
 
     # FAVORITE COLOR
     if "mera favorite color kya hai" in text:
 
-        if "favorite color" in memory:
-            return f"Tumhara favorite color {memory['favorite color']} hai."
+        if "favorite color" in user_memory:
+            return f"Tumhara favorite color {user_memory['favorite color']} hai."
 
         return "Mujhe abhi tumhara favorite color nahi pata."
 
     # FAVORITE
     if "mera favorite kya hai" in text:
 
-        if "favorite" in memory:
-            return f"Tumhe {memory['favorite']} pasand hai."
+        if "favorite" in user_memory:
+            return f"Tumhe {user_memory['favorite']} pasand hai."
 
         return "Mujhe abhi tumhara favorite nahi pata."
 
@@ -251,30 +277,160 @@ def personal_answer(message):
         "what is my college"
     ]):
 
-        if "college" in memory:
-            return f"Tumhara college {memory['college']} hai."
+        if "college" in user_memory:
+            return f"Tumhara college {user_memory['college']} hai."
 
         return "Mujhe abhi tumhara college nahi pata."
 
     # GOAL
     if "mera goal kya hai" in text:
 
-        if "goal" in memory:
-            return f"Tumhara goal {memory['goal']} hai."
+        if "goal" in user_memory:
+            return f"Tumhara goal {user_memory['goal']} hai."
 
         return "Mujhe abhi tumhara goal nahi pata."
 
     # CITY
     if "meri city kya hai" in text:
 
-        if "city" in memory:
-            return f"Tumhari city {memory['city']} hai."
+        if "city" in user_memory:
+            return f"Tumhari city {user_memory['city']} hai."
 
         return "Mujhe abhi tumhari city nahi pata."
 
     return None
+# ==========================================
+# SIGNUP
+# ==========================================
+
+@app.route("/signup", methods=["POST"])
+def signup():
+
+    try:
+        data = request.get_json(silent=True)
+
+        if not data:
+            return jsonify({
+                "error": "Request data missing"
+            }), 400
+
+        username = str(data.get("username", "")).strip()
+        password = str(data.get("password", ""))
+
+        if not username or not password:
+            return jsonify({
+                "error": "Username and password are required"
+            }), 400
+
+        if len(username) < 3:
+            return jsonify({
+                "error": "Username must be at least 3 characters"
+            }), 400
+
+        if len(password) < 8:
+            return jsonify({
+                "error": "Password must be at least 8 characters"
+            }), 400
+
+        users = load_users()
+
+        for user in users:
+            if user.get("username", "").lower() == username.lower():
+                return jsonify({
+                    "error": "Username already exists"
+                }), 409
+
+        users.append({
+            "username": username,
+            "password": generate_password_hash(password)
+        })
+
+        save_users(users)
+
+        session["username"] = username
+
+        return jsonify({
+    "message": "Signup successful",
+    "username": username
+}), 201
+
+    except Exception as error:
+
+        print("Signup error:", error)
+
+        return jsonify({
+        "error": "Internal server error"
+        }), 500
 
 
+# ==========================================
+# LOGIN
+# ==========================================
+
+@app.route("/login", methods=["POST"])
+def login():
+
+    try:
+        data = request.get_json(silent=True)
+
+        if not data:
+            return jsonify({
+                "error": "Request data missing"
+            }), 400
+
+        username = str(data.get("username", "")).strip()
+        password = str(data.get("password", ""))
+
+        users = load_users()
+
+        for user in users:
+
+            if user.get("username", "").lower() == username.lower():
+
+                if check_password_hash(
+                    user.get("password", ""),
+                    password
+                ):
+                    session["username"] = username
+                    return jsonify({
+                        "message": "Login successful",
+                        "username": user["username"]
+                    })
+
+                break
+
+        return jsonify({
+            "error": "Invalid username or password"
+        }), 401
+
+    except Exception as error:
+
+        print("Login error:", error)
+
+        return jsonify({
+            "error": "Internal server error"
+        }), 500
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({
+        "message": "Logout successful"
+    }), 200
+
+
+@app.route("/me", methods=["GET"])
+def me():
+    username = session.get("username")
+
+    if not username:
+        return jsonify({
+            "logged_in": False
+        }), 200
+
+    return jsonify({
+        "logged_in": True,
+        "username": username
+    }), 200
 # ==========================================
 # HOME
 # ==========================================
@@ -307,8 +463,17 @@ def health():
 @app.route("/chat", methods=["POST"])
 def chat():
 
-    global conversation_history
+    
 
+
+    username = session.get("username")
+
+    if not username:
+        return jsonify({
+            "error": "Login required"
+        }), 401
+
+    user_memory = load_memory(username)
     try:
 
         data = request.get_json(silent=True)
@@ -328,7 +493,10 @@ def chat():
             return jsonify({
                 "error": "Message is empty"
             }), 400
-
+        if len(message) > 5000:
+           return jsonify({
+               "error": "Message too long. Maximum 5000 characters allowed."
+           }), 400
         history_from_frontend = data.get(
             "history",
             []
@@ -338,19 +506,11 @@ def chat():
         # PERSONAL QUESTION
         # ======================================
 
-        direct_reply = personal_answer(message)
+        direct_reply = personal_answer(message, user_memory)
 
         if direct_reply:
 
-            conversation_history.append({
-                "role": "user",
-                "content": message
-            })
-
-            conversation_history.append({
-                "role": "assistant",
-                "content": direct_reply
-            })
+            
 
             return jsonify({
                 "reply": direct_reply
@@ -361,7 +521,7 @@ def chat():
         # MEMORY
         # ======================================
 
-        detect_memory(message)
+        detect_memory(message, user_memory)
 
 
         # ======================================
@@ -370,7 +530,7 @@ def chat():
 
         memory_lines = []
 
-        for key, value in memory.items():
+        for key, value in user_memory.items():
 
             memory_lines.append(
                 f"{key}: {value}"
@@ -409,39 +569,21 @@ User information:
 
         conversation_messages = []
 
-        if history_from_frontend:
+        previous_messages = history_from_frontend[-7:-1]
 
-            previous_messages = history_from_frontend[-7:-1]
+        for msg in previous_messages:
 
-            for msg in previous_messages:
+          role = msg.get("role")
+          content = msg.get("content")
 
-                role = msg.get("role")
+          if role in ["user", "assistant"] and content:
 
-                content = msg.get("content")
-
-                if role in ["user", "assistant"] and content:
-
-                    conversation_messages.append(
-                        f"{role}: {content}"
-                    )
-
-        else:
-
-            previous_messages = conversation_history[-6:]
-
-            for msg in previous_messages:
-
-                role = msg.get("role")
-
-                content = msg.get("content")
-
-                if role in ["user", "assistant"] and content:
-
-                    conversation_messages.append(
-                        f"{role}: {content}"
-                    )
+             conversation_messages.append(
+            f"{role}: {content}"
+        )
 
 
+        
         conversation_text = "\n".join(
             conversation_messages
         )
@@ -479,19 +621,7 @@ user: {message}
             )
 
 
-        # ======================================
-        # SAVE CONVERSATION
-        # ======================================
-
-        conversation_history.append({
-            "role": "user",
-            "content": message
-        })
-
-        conversation_history.append({
-            "role": "assistant",
-            "content": reply
-        })
+        
 
 
         # ======================================
@@ -511,7 +641,7 @@ user: {message}
         )
 
         return jsonify({
-            "error": str(error)
+            "error": "Internal server error"
         }), 500
 
 
@@ -522,16 +652,23 @@ user: {message}
 @app.route("/history", methods=["GET"])
 def history():
 
+    username = session.get("username")
+
+    if not username:
+        return jsonify({
+            "error": "Login required"
+        }), 401
+
     try:
 
         return jsonify({
-            "history": load_history()
+            "history": load_history(username)
         })
 
     except Exception as error:
 
         return jsonify({
-            "error": str(error)
+            "error": "Internal server error"
         }), 500
 
 
@@ -542,17 +679,25 @@ def history():
 @app.route("/new-chat", methods=["POST"])
 def new_chat():
 
-    global conversation_history
 
+    username = session.get("username")
+
+    if not username:
+       return jsonify({
+        "error": "Login required"
+    }), 401
     try:
 
-        if conversation_history:
+        data = request.get_json(silent=True) or {}
 
-            add_chat(
-                conversation_history
-            )
+        history = data.get("history", [])
 
-        conversation_history = []
+        if history:
+          add_chat(
+        history,
+        username
+    )
+        
 
         return jsonify({
             "message": "New chat started"
@@ -561,7 +706,7 @@ def new_chat():
     except Exception as error:
 
         return jsonify({
-            "error": str(error)
+            "error": "Internal server error"
         }), 500
 
 
@@ -574,10 +719,18 @@ def new_chat():
     methods=["DELETE"]
 )
 def delete_history(index):
+    username = session.get("username")
 
+    if not username:
+        return jsonify({
+        "error": "Login required"
+    }), 401
     try:
 
-        success = delete_chat(index)
+        success = delete_chat(
+    index,
+    username
+)
 
         if not success:
 
@@ -592,7 +745,7 @@ def delete_history(index):
     except Exception as error:
 
         return jsonify({
-            "error": str(error)
+            "error": "Internal server error"
         }), 500
 
 
@@ -605,6 +758,13 @@ def delete_history(index):
     methods=["POST", "PUT"]
 )
 def rename_history(index):
+
+    username = session.get("username")
+
+    if not username:
+        return jsonify({
+            "error": "Login required"
+        }), 401
 
     try:
 
@@ -643,9 +803,10 @@ def rename_history(index):
         title = title[:40]
 
         success = rename_chat(
-            index,
-            title
-        )
+    index,
+    title,
+    username
+)
 
         if not success:
 
@@ -666,7 +827,7 @@ def rename_history(index):
         )
 
         return jsonify({
-            "error": str(error)
+            "error": "Internal server error"
         }), 500
 
 
