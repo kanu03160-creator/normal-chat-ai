@@ -1,3 +1,4 @@
+import psycopg2
 import json
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, jsonify, send_from_directory, session
@@ -50,6 +51,37 @@ app.secret_key = SECRET_KEY
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("RENDER") == "true"
+def get_db_connection():
+    database_url = os.environ.get("DATABASE_URL")
+
+    if not database_url:
+        raise RuntimeError("DATABASE_URL is not set")
+
+    return psycopg2.connect(database_url)
+def init_db():
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS memories (
+                    username TEXT NOT NULL,
+                    key TEXT NOT NULL,
+                    value TEXT NOT NULL,
+                    PRIMARY KEY (username, key)
+                )
+            """)
+            cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL
+    )
+""")
+        conn.commit()
+
+    finally:
+        conn.close()
 # ==========================================
 # GEMINI
 # ==========================================
@@ -299,6 +331,7 @@ def personal_answer(message, user_memory):
         return "Mujhe abhi tumhari city nahi pata."
 
     return None
+
 # ==========================================
 # SIGNUP
 # ==========================================
@@ -332,37 +365,45 @@ def signup():
                 "error": "Password must be at least 8 characters"
             }), 400
 
-        users = load_users()
+        password_hash = generate_password_hash(password)
 
-        for user in users:
-            if user.get("username", "").lower() == username.lower():
-                return jsonify({
-                    "error": "Username already exists"
-                }), 409
+        conn = get_db_connection()
 
-        users.append({
-            "username": username,
-            "password": generate_password_hash(password)
-        })
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO users (username, password)
+                    VALUES (%s, %s)
+                    """,
+                    (username, password_hash)
+                )
 
-        save_users(users)
+            conn.commit()
+
+        except psycopg2.errors.UniqueViolation:
+            conn.rollback()
+
+            return jsonify({
+                "error": "Username already exists"
+            }), 409
+
+        finally:
+            conn.close()
 
         session["username"] = username
 
         return jsonify({
-    "message": "Signup successful",
-    "username": username
-}), 201
+            "message": "Signup successful",
+            "username": username
+        }), 201
 
     except Exception as error:
-
         print("Signup error:", error)
 
         return jsonify({
-        "error": "Internal server error"
+            "error": "Internal server error"
         }), 500
-
-
 # ==========================================
 # LOGIN
 # ==========================================
@@ -381,56 +422,54 @@ def login():
         username = str(data.get("username", "")).strip()
         password = str(data.get("password", ""))
 
-        users = load_users()
+        if not username or not password:
+            return jsonify({
+                "error": "Username and password are required"
+            }), 400
 
-        for user in users:
+        conn = get_db_connection()
 
-            if user.get("username", "").lower() == username.lower():
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT username, password
+                    FROM users
+                    WHERE LOWER(username) = LOWER(%s)
+                    """,
+                    (username,)
+                )
 
-                if check_password_hash(
-                    user.get("password", ""),
-                    password
-                ):
-                    session["username"] = username
-                    return jsonify({
-                        "message": "Login successful",
-                        "username": user["username"]
-                    })
+                user = cursor.fetchone()
 
-                break
+        finally:
+            conn.close()
+
+        if not user:
+            return jsonify({
+                "error": "Invalid username or password"
+            }), 401
+
+        stored_username, stored_password = user
+
+        if not check_password_hash(stored_password, password):
+            return jsonify({
+                "error": "Invalid username or password"
+            }), 401
+
+        session["username"] = stored_username
 
         return jsonify({
-            "error": "Invalid username or password"
-        }), 401
+            "message": "Login successful",
+            "username": stored_username
+        }), 200
 
     except Exception as error:
-
         print("Login error:", error)
 
         return jsonify({
             "error": "Internal server error"
         }), 500
-@app.route("/logout", methods=["POST"])
-def logout():
-    session.clear()
-    return jsonify({
-        "message": "Logout successful"
-    }), 200
-
-
-@app.route("/me", methods=["GET"])
-def me():
-    username = session.get("username")
-
-    if not username:
-        return jsonify({
-            "logged_in": False
-        }), 200
-
-    return jsonify({
-        "logged_in": True,
-        "username": username
-    }), 200
 # ==========================================
 # HOME
 # ==========================================
@@ -836,7 +875,7 @@ def rename_history(index):
 # ==========================================
 
 if __name__ == "__main__":
-
+    init_db()
     port = int(
         os.environ.get(
             "PORT",

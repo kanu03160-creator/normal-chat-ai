@@ -1,42 +1,92 @@
-import json
 import os
+import psycopg2
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "data")
-MEMORY_FILE = os.path.join(DATA_DIR, "memory.json")
 
-def load_memory():
-    os.makedirs(DATA_DIR, exist_ok=True)
+def get_db_connection():
+    database_url = os.environ.get("DATABASE_URL")
 
-    if not os.path.exists(MEMORY_FILE):
-        return {}
+    if not database_url:
+        raise RuntimeError("DATABASE_URL is not set")
+
+    return psycopg2.connect(database_url)
+
+
+def init_memory_table():
+    conn = get_db_connection()
 
     try:
-        with open(MEMORY_FILE, "r", encoding="utf-8") as file:
-            return json.load(file)
-    except Exception:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS memories (
+                    username TEXT NOT NULL,
+                    key TEXT NOT NULL,
+                    value TEXT NOT NULL,
+                    PRIMARY KEY (username, key)
+                )
+            """)
+
+        conn.commit()
+
+    finally:
+        conn.close()
+
+
+def load_memory(username):
+    if not username:
         return {}
 
+    init_memory_table()
 
-def save_memory(memory):
-    os.makedirs(DATA_DIR, exist_ok=True)
+    conn = get_db_connection()
 
-    with open(MEMORY_FILE, "w", encoding="utf-8") as file:
-        json.dump(
-            memory,
-            file,
-            ensure_ascii=False,
-            indent=4
-        )
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT key, value
+                FROM memories
+                WHERE username = %s
+                """,
+                (username,)
+            )
+
+            rows = cursor.fetchall()
+
+            return {
+                key: value
+                for key, value in rows
+            }
+
+    finally:
+        conn.close()
 
 
-def update_memory(key, value):
-    memory = load_memory()
+def update_memory(key, value, username):
+    if not username:
+        return
 
     value = str(value).strip()
 
     if not value:
         return
 
-    memory[key] = value
-    save_memory(memory)
+    init_memory_table()
+
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO memories (username, key, value)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (username, key)
+                DO UPDATE SET value = EXCLUDED.value
+                """,
+                (username, key, value)
+            )
+
+        conn.commit()
+
+    finally:
+        conn.close()
