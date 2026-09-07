@@ -471,6 +471,24 @@ def login():
             "error": "Internal server error"
         }), 500
 # ==========================================
+# CURRENT USER
+# ==========================================
+
+@app.route("/me", methods=["GET"])
+def me():
+
+    username = session.get("username")
+
+    if username:
+        return jsonify({
+            "logged_in": True,
+            "username": username
+        })
+
+    return jsonify({
+        "logged_in": False
+    })   
+# ==========================================
 # HOME
 # ==========================================
 
@@ -875,7 +893,7 @@ def rename_history(index):
 # ==========================================
 
 if __name__ == "__main__":
-    init_db()
+    # init_db()  # Local testing ke liye temporarily off
     port = int(
         os.environ.get(
             "PORT",
