@@ -399,11 +399,11 @@ def signup():
         }), 201
 
     except Exception as error:
-        print("Signup error:", error)
+      print("Backend error:", repr(error))
 
-        return jsonify({
-            "error": "Internal server error"
-        }), 500
+    return jsonify({
+        "error": str(error)
+    }), 500
 # ==========================================
 # LOGIN
 # ==========================================
