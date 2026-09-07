@@ -893,7 +893,7 @@ def rename_history(index):
 # ==========================================
 
 if __name__ == "__main__":
-    # init_db()  # Local testing ke liye temporarily off
+    init_db() 
     port = int(
         os.environ.get(
             "PORT",
