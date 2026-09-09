@@ -1030,66 +1030,62 @@ const loginButton = document.getElementById("loginButton");
         /* =================================
            NEW CHAT
         ================================= */
-
         async function newChat() {
+    try {
 
-            try {
-
-                const response =
-                    await fetch(
-                        `${API_URL}/new-chat`,
-                        {
-                            method: "POST"
-                        }
-                    );
-
-
-                const data =
-                    await response.json();
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        data.error ||
-                        "New Chat error"
-                    );
-                }
-
-
-                conversationHistory = [];
-
-
-                localStorage.removeItem(
-                    "normalChatCurrent"
-                );
-
-
-                chatBox.innerHTML = "";
-
-                messageInput.value = "";
-
-                sidebar.classList.remove(
-                    "open"
-                );
-
-                messageInput.focus();
-
-
-            } catch (error) {
-
-                console.error(
-                    "New Chat error:",
-                    error
-                );
-
-                alert(
-                    "New Chat nahi bana: " +
-                    error.message
-                );
+        const response = await fetch(
+            `${API_URL}/new-chat`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    history: conversationHistory
+                })
             }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error ||
+                "New Chat error"
+            );
         }
 
+        conversationHistory = [];
+
+        localStorage.removeItem(
+            "normalChatCurrent"
+        );
+
+        chatBox.innerHTML = "";
+
+        messageInput.value = "";
+
+        sidebar.classList.remove(
+            "open"
+        );
+
+        messageInput.focus();
+
+    } catch (error) {
+
+        console.error(
+            "New Chat error:",
+            error
+        );
+
+        alert(
+            "New Chat nahi bana: " +
+            error.message
+        );
+    }
+}
+        
+        
 
         /* =================================
            SHOW SIDEBAR
