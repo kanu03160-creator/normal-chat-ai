@@ -71,6 +71,7 @@ def init_db():
                     PRIMARY KEY (username, key)
                 )
             """)
+            
             cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -78,6 +79,16 @@ def init_db():
         password TEXT NOT NULL
     )
 """)
+                        # chat history table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS chat_history (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    messages JSONB NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
         conn.commit()
 
     finally:
@@ -692,15 +703,17 @@ user: {message}
 
     except Exception as error:
 
-        print(
-            "Backend error:",
-            error
-        )
+      import traceback
 
-        return jsonify({
-            "error": "Internal server error"
-        }), 500
+    print("========== CHAT ERROR ==========")
+    print("ERROR:", repr(error))
+    traceback.print_exc()
+    print("================================")
 
+    return jsonify({
+        "error": "Internal server error",
+        "details": str(error)
+    }), 500
 
 # ==========================================
 # HISTORY
@@ -724,9 +737,16 @@ def history():
 
     except Exception as error:
 
-        return jsonify({
-            "error": "Internal server error"
-        }), 500
+      import traceback
+
+    print("========== HISTORY ERROR ==========")
+    print("ERROR:", repr(error))
+    traceback.print_exc()
+    print("===================================")
+
+    return jsonify({
+        "error": str(error)
+    }), 500
 
 
 # ==========================================
