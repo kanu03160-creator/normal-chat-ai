@@ -8,7 +8,182 @@
     <title>Normal Chat AI</title>
 
     <style>
-        
+    /* ==========================================
+   FINAL MOBILE + RESPONSIVE POLISH
+========================================== */
+
+@media (max-width: 600px) {
+
+    /* HEADER */
+    .header {
+        height: 64px;
+        padding: 0 10px;
+        gap: 8px;
+    }
+
+    .header h1 {
+        font-size: 20px;
+        white-space: nowrap;
+    }
+
+    .header-buttons {
+        gap: 5px;
+    }
+
+    .header button {
+        padding: 9px 8px;
+        font-size: 12px;
+        border-radius: 7px;
+    }
+
+    /* CHAT */
+    .chat-box {
+        height: calc(100vh - 128px);
+        padding: 12px 9px;
+    }
+
+    .message {
+        max-width: 92%;
+        padding: 10px 12px;
+        margin-bottom: 10px;
+        font-size: 15px;
+        line-height: 1.45;
+        border-radius: 10px;
+    }
+
+    /* INPUT */
+    .input-area {
+        height: 64px;
+        padding: 8px;
+        gap: 7px;
+    }
+
+    #message {
+        min-width: 0;
+        padding: 11px;
+        font-size: 15px;
+        border-radius: 10px;
+    }
+
+    #sendButton {
+        width: 65px;
+        min-width: 65px;
+        font-size: 14px;
+        border-radius: 10px;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+        width: 88vw;
+        max-width: 340px;
+        padding: 14px;
+    }
+
+    .sidebar-header {
+        font-size: 20px;
+        margin-bottom: 14px;
+    }
+
+    .sidebar-new-chat {
+        padding: 12px;
+        font-size: 15px;
+    }
+
+    #historySearch {
+        padding: 11px;
+        font-size: 15px;
+    }
+
+    #clearHistorySearch {
+        padding: 9px;
+        font-size: 14px;
+    }
+
+    .sidebar-chat {
+        padding: 10px;
+        min-height: 48px;
+    }
+
+    .sidebar-chat-title {
+        font-size: 14px;
+    }
+
+    .sidebar-rename,
+    .sidebar-delete {
+        font-size: 15px;
+        padding: 4px;
+    }
+
+    /* LOGIN */
+    .login-box {
+        width: calc(100vw - 30px);
+        max-width: 360px;
+        padding: 24px 18px;
+        border-radius: 14px;
+    }
+
+    .login-box h2 {
+        font-size: 22px;
+        margin-bottom: 20px;
+    }
+
+    .login-box input {
+        padding: 12px;
+        font-size: 15px;
+    }
+
+    .auth-submit {
+        padding: 12px;
+        font-size: 15px;
+    }
+}
+
+
+/* VERY SMALL PHONES */
+@media (max-width: 380px) {
+
+    .header h1 {
+        font-size: 17px;
+    }
+
+    .header-buttons {
+        gap: 3px;
+    }
+
+    .header button {
+        padding: 8px 6px;
+        font-size: 11px;
+    }
+
+    .message {
+        max-width: 95%;
+        font-size: 14px;
+    }
+
+    #sendButton {
+        width: 58px;
+        min-width: 58px;
+        font-size: 13px;
+    }
+}
+
+
+/* TABLET */
+@media (min-width: 601px) and (max-width: 900px) {
+
+    .message {
+        max-width: 85%;
+    }
+
+    .sidebar {
+        width: 330px;
+    }
+
+    .header button {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+}
     /* FORCE DARK CHAT */
     body {
         background: #000 !important;
