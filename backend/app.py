@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify, send_from_directory, session
 from google import genai
 import re
 import os
+import threading
 
 from chat_history import add_chat, load_history, delete_chat, rename_chat
 from memory import load_memory, update_memory
@@ -476,11 +477,17 @@ def login():
         }), 200
 
     except Exception as error:
-        print("Login error:", error)
+      import traceback
 
-        return jsonify({
-            "error": "Internal server error"
-        }), 500
+    print("========== LOGIN ERROR ==========")
+    print("ERROR:", repr(error))
+    traceback.print_exc()
+    print("=================================")
+
+    return jsonify({
+        "error": "Login error",
+        "details": str(error)
+    }), 500
 # ==========================================
 # CURRENT USER
 # ==========================================
@@ -909,10 +916,47 @@ def rename_history(index):
 
 
 # ==========================================
-# START
+# DATABASE STARTUP
 # ==========================================
 
-init_db()
+_db_initialized = False
+_db_init_lock = threading.Lock()
+
+@app.before_request
+def ensure_database():
+    global _db_initialized
+
+    # The homepage can load even if the database is temporarily unavailable.
+    if request.path == "/" or request.path.startswith("/static/"):
+        return None
+
+    if _db_initialized:
+        return None
+
+    with _db_init_lock:
+        if _db_initialized:
+            return None
+
+        try:
+            init_db()
+            _db_initialized = True
+            print("PostgreSQL database initialized successfully.")
+        except Exception as error:
+            print("========== DATABASE INIT ERROR ==========")
+            print("ERROR:", repr(error))
+            print("=========================================")
+
+            return jsonify({
+                "error": "Database connection failed",
+                "details": str(error)
+            }), 500
+
+    return None
+
+
+# ==========================================
+# START
+# ==========================================
 
 if __name__ == "__main__":
     port = int(
