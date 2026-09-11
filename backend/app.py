@@ -99,6 +99,7 @@ def init_db():
 # ==========================================
 
 MODEL = "gemini-3.6-flash"
+FALLBACK_MODEL = "gemini-2.5-flash-lite"
 
 client = genai.Client()
 
@@ -682,11 +683,71 @@ user: {message}
         # GEMINI REQUEST
         # ======================================
 
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=prompt
-        )
+                # ======================================
+        # GEMINI REQUEST WITH RETRY + FALLBACK
+        # ======================================
 
+        response = None
+        last_error = None
+
+        models_to_try = [
+            MODEL,
+            FALLBACK_MODEL
+        ]
+
+        for current_model in models_to_try:
+
+            for attempt in range(2):
+
+                try:
+
+                    print(
+                        f"Trying Gemini model: {current_model} "
+                        f"(attempt {attempt + 1})"
+                    )
+
+                    response = client.models.generate_content(
+                        model=current_model,
+                        contents=prompt
+                    )
+
+                    if response and response.text:
+                        break
+
+                except Exception as error:
+
+                    last_error = error
+
+                    error_text = str(error)
+
+                    print(
+                        f"Gemini error on {current_model}: "
+                        f"{error_text}"
+                    )
+
+                    # Only retry temporary server overload errors
+                    if "503" in error_text or "UNAVAILABLE" in error_text:
+
+                        import time
+
+                        time.sleep(2)
+
+                        continue
+
+                    # Other errors should not be retried
+                    raise
+
+            if response and response.text:
+                break
+
+        if not response or not response.text:
+
+            if last_error:
+                raise last_error
+
+            raise Exception(
+                "Gemini ne response nahi diya."
+            ) 
         reply = (response.text or "").strip()
 
         if not reply:
