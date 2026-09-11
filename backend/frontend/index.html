@@ -8,594 +8,781 @@
     <title>Normal Chat AI</title>
 
     <style>
-    /* ==========================================
-   FINAL MOBILE + RESPONSIVE POLISH
-========================================== */
-
-@media (max-width: 600px) {
-
-    /* HEADER */
-    .header {
-        height: 64px;
-        padding: 0 10px;
-        gap: 8px;
-    }
-
-    .header h1 {
-        font-size: 20px;
-        white-space: nowrap;
-    }
-
-    .header-buttons {
-        gap: 5px;
-    }
-
-    .header button {
-        padding: 9px 8px;
-        font-size: 12px;
-        border-radius: 7px;
-    }
-
-    /* CHAT */
-    .chat-box {
-        height: calc(100vh - 128px);
-        padding: 12px 9px;
-    }
-
-    .message {
-        max-width: 92%;
-        padding: 10px 12px;
-        margin-bottom: 10px;
-        font-size: 15px;
-        line-height: 1.45;
-        border-radius: 10px;
-    }
-
-    /* INPUT */
-    .input-area {
-        height: 64px;
-        padding: 8px;
-        gap: 7px;
-    }
-
-    #message {
-        min-width: 0;
-        padding: 11px;
-        font-size: 15px;
-        border-radius: 10px;
-    }
-
-    #sendButton {
-        width: 65px;
-        min-width: 65px;
-        font-size: 14px;
-        border-radius: 10px;
-    }
-
-    /* SIDEBAR */
-    .sidebar {
-        width: 88vw;
-        max-width: 340px;
-        padding: 14px;
-    }
-
-    .sidebar-header {
-        font-size: 20px;
-        margin-bottom: 14px;
-    }
-
-    .sidebar-new-chat {
-        padding: 12px;
-        font-size: 15px;
-    }
-
-    #historySearch {
-        padding: 11px;
-        font-size: 15px;
-    }
-
-    #clearHistorySearch {
-        padding: 9px;
-        font-size: 14px;
-    }
-
-    .sidebar-chat {
-        padding: 10px;
-        min-height: 48px;
-    }
-
-    .sidebar-chat-title {
-        font-size: 14px;
-    }
-
-    .sidebar-rename,
-    .sidebar-delete {
-        font-size: 15px;
-        padding: 4px;
-    }
-
-    /* LOGIN */
-    .login-box {
-        width: calc(100vw - 30px);
-        max-width: 360px;
-        padding: 24px 18px;
-        border-radius: 14px;
-    }
-
-    .login-box h2 {
-        font-size: 22px;
-        margin-bottom: 20px;
-    }
-
-    .login-box input {
-        padding: 12px;
-        font-size: 15px;
-    }
-
-    .auth-submit {
-        padding: 12px;
-        font-size: 15px;
-    }
-}
-
-
-/* VERY SMALL PHONES */
-@media (max-width: 380px) {
-
-    .header h1 {
-        font-size: 17px;
-    }
-
-    .header-buttons {
-        gap: 3px;
-    }
-
-    .header button {
-        padding: 8px 6px;
-        font-size: 11px;
-    }
-
-    .message {
-        max-width: 95%;
-        font-size: 14px;
-    }
-
-    #sendButton {
-        width: 58px;
-        min-width: 58px;
-        font-size: 13px;
-    }
-}
-
-
-/* TABLET */
-@media (min-width: 601px) and (max-width: 900px) {
-
-    .message {
-        max-width: 85%;
-    }
-
-    .sidebar {
-        width: 330px;
-    }
-
-    .header button {
-        padding: 10px 14px;
-        font-size: 14px;
-    }
-}
-    /* FORCE DARK CHAT */
-    body {
-        background: #000 !important;
-    }
-
-    .chat-box {
-        background: #000 !important;
-        color: #fff !important;
-    }
-
-    .input-area {
-        background: #000 !important;
-    }
-
-    #message {
-        background: #fff !important;
-        color: #000 !important;
-    }
-    * {
-        box-sizing: border-box;
-    }
-
-    body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #000 !important;
-    }
-
-    /* =========================
-       HEADER
-    ========================= */
-
-    .header {
-        height: 80px;
-        background: #202124;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 15px;
-    }
-
-    .header h1 {
-        margin: 0;
-        font-size: 26px;
-    }
-
-    .header-buttons {
-        display: flex;
-        gap: 10px;
-    }
-
-    .header button {
-        background: #343541;
-        color: white;
-        border: none;
-        padding: 12px 18px;
-        border-radius: 9px;
-        font-size: 16px;
-        cursor: pointer;
-    }
-
-    .header button:hover {
-        background: #4a4b55;
-    }
-
-    /* =========================
-       CHAT BOX
-    ========================= */
-
-    .chat-box {
-        height: calc(100vh - 160px);
-        overflow-y: auto;
-        padding: 20px;
-        background: #000 !important;
-        color: #fff !important;
-    }
-
-    .message {
-        margin-bottom: 15px;
-        padding: 12px 16px;
-        border-radius: 10px;
-        max-width: 80%;
-        line-height: 1.5;
-        word-wrap: break-word;
-    }
-
-    .user {
-        background: #d9e7ff;
-        color: #000;
-        margin-left: auto;
-    }
-
-    .bot {
-        background: #2b2b2b;
-        color: white;
-        margin-right: auto;
-    }
-
-    /* =========================
-       INPUT
-    ========================= */
-
-    .input-area {
-        height: 80px;
-        display: flex;
-        gap: 12px;
-        padding: 12px;
-        background: #000 !important;
-    }
-
-    #message {
-        flex: 1;
-        border: 1px solid #ccc;
-        border-radius: 12px;
-        padding: 15px;
-        font-size: 18px;
-        outline: none;
-        background: #fff !important;
-        color: #000 !important;
-    }
-
-    #sendButton {
-        width: 85px;
-        border: none;
-        border-radius: 12px;
-        background: #202124;
-        color: white;
-        font-size: 17px;
-        cursor: pointer;
-    }
-
-    #sendButton:hover {
-        background: #333;
-    }
-
-    #sendButton:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    /* =========================
-       TYPING DOTS
-    ========================= */
-
-    .typing-dots {
-        display: inline-flex;
-        gap: 4px;
-        align-items: center;
-    }
-
-    .typing-dots span {
-        width: 7px;
-        height: 7px;
-        background: #555;
-        border-radius: 50%;
-        animation: typing 1.4s infinite;
-    }
-
-    .typing-dots span:nth-child(2) {
-        animation-delay: 0.2s;
-    }
-
-    .typing-dots span:nth-child(3) {
-        animation-delay: 0.4s;
-    }
-
-    @keyframes typing {
-        0%, 60%, 100% {
-            opacity: 0.3;
-            transform: translateY(0);
+        * {
+            box-sizing: border-box;
         }
 
-        30% {
-            opacity: 1;
-            transform: translateY(-4px);
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #000;
+            color: #fff;
         }
-    }
 
-    /* =========================
-       SIDEBAR
-    ========================= */
+        /* ==========================================
+           HEADER
+        ========================================== */
 
-    .sidebar {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 370px;
-        max-width: 90vw;
-        height: 100vh;
-        background: white;
-        border-right: 1px solid #ddd;
-        padding: 18px;
-        z-index: 2000;
-        transform: translateX(-100%);
-        transition: transform 0.25s ease;
-        overflow-y: auto;
-    }
+        .header {
+            height: 72px;
+            width: 100%;
+            background: #111;
+            border-bottom: 1px solid #262626;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            position: relative;
+            z-index: 10;
+        }
 
-    .sidebar.open {
-        transform: translateX(0);
-    }
-
-    .sidebar-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 24px;
-        margin-bottom: 18px;
-    }
-
-    #closeSidebar {
-        border: none;
-        background: transparent;
-        font-size: 28px;
-        cursor: pointer;
-    }
-
-    .sidebar-new-chat {
-        width: 100%;
-        padding: 14px;
-        border: none;
-        border-radius: 9px;
-        background: #202124;
-        color: white;
-        cursor: pointer;
-        margin-bottom: 12px;
-        font-size: 16px;
-    }
-
-    #historySearch {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #ccc;
-        border-radius: 9px;
-        outline: none;
-        margin-bottom: 8px;
-        font-size: 16px;
-    }
-
-    #clearHistorySearch {
-        width: 100%;
-        padding: 10px;
-        border: none;
-        border-radius: 9px;
-        background: #eee;
-        cursor: pointer;
-        margin-bottom: 15px;
-        font-size: 15px;
-    }
-
-    .sidebar-chat {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-        padding: 12px;
-        margin-bottom: 8px;
-        border-radius: 9px;
-        background: #f1f1f1;
-        cursor: pointer;
-        min-height: 52px;
-    }
-
-    .sidebar-chat:hover {
-        background: #e5e5e5;
-    }
-
-    .sidebar-chat.active {
-        background: #d9e7ff;
-        font-weight: bold;
-    }
-
-    .sidebar-chat-title {
-        flex: 1;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        cursor: pointer;
-    }
-
-    .sidebar-actions {
-        display: flex;
-        gap: 4px;
-        flex-shrink: 0;
-    }
-
-    .sidebar-rename,
-    .sidebar-delete {
-        border: none;
-        background: transparent;
-        cursor: pointer;
-        font-size: 17px;
-        padding: 5px;
-        border-radius: 5px;
-    }
-
-    /* =========================
-       MOBILE
-    ========================= */
-
-    @media (max-width: 600px) {
         .header h1 {
-            font-size: 21px;
+            margin: 0;
+            color: #fff;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+
+        .header-buttons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .header button {
-            padding: 10px 12px;
+            border: 1px solid #333;
+            background: #1b1b1b;
+            color: #eee;
+            padding: 10px 15px;
+            border-radius: 9px;
             font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s ease;
         }
 
+        .header button:hover {
+            background: #292929;
+            border-color: #444;
+        }
+
+        .header button:active {
+            transform: scale(0.97);
+        }
+
+        #loginButton {
+            background: #f1f1f1;
+            color: #111;
+            border-color: #f1f1f1;
+            font-weight: 600;
+        }
+
+        #loginButton:hover {
+            background: #fff;
+        }
+
+
+        /* ==========================================
+           CHAT BOX
+        ========================================== */
+
+        .chat-box {
+            height: calc(100vh - 144px);
+            width: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 24px;
+            background: #000 !important;
+            color: #fff !important;
+            scroll-behavior: smooth;
+        }
+
+        .chat-box::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-box::-webkit-scrollbar-track {
+            background: #000;
+        }
+
+        .chat-box::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 10px;
+        }
+
+        .chat-box::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+
+
+        /* ==========================================
+           MESSAGE
+        ========================================== */
+
         .message {
-            max-width: 90%;
+            width: fit-content;
+            max-width: 78%;
+            margin-bottom: 16px;
+            padding: 13px 16px;
+            border-radius: 14px;
+            line-height: 1.55;
+            font-size: 15px;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+            white-space: normal;
+        }
+
+        .message b {
+            font-size: 13px;
+            opacity: 0.85;
+        }
+
+        .user {
+            margin-left: auto;
+            margin-right: 0;
+            background: #262626;
+            color: #fff;
+            border: 1px solid #333;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot {
+            margin-left: 0;
+            margin-right: auto;
+            background: #151515;
+            color: #f5f5f5;
+            border: 1px solid #252525;
+            border-bottom-left-radius: 5px;
+        }
+
+
+        /* ==========================================
+           TYPING DOTS
+        ========================================== */
+
+        .typing-dots {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 0;
+        }
+
+        .typing-dots span {
+            width: 7px;
+            height: 7px;
+            background: #888;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+
+            0%,
+            60%,
+            100% {
+                opacity: 0.25;
+                transform: translateY(0);
+            }
+
+            30% {
+                opacity: 1;
+                transform: translateY(-4px);
+            }
+        }
+
+
+        /* ==========================================
+           INPUT AREA
+        ========================================== */
+
+        .input-area {
+            height: 72px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: #000 !important;
+            border-top: 1px solid #1f1f1f;
+        }
+
+        #message {
+            flex: 1;
+            min-width: 0;
+            height: 50px;
+            border: 1px solid #333;
+            border-radius: 13px;
+            padding: 0 16px;
+            font-size: 16px;
+            outline: none;
+            background: #171717 !important;
+            color: #fff !important;
+            transition: 0.2s ease;
+        }
+
+        #message::placeholder {
+            color: #777;
+        }
+
+        #message:focus {
+            border-color: #555;
+            background: #1b1b1b !important;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.03);
         }
 
         #sendButton {
-            width: 75px;
+            height: 50px;
+            width: 82px;
+            min-width: 82px;
+            border: 1px solid #333;
+            border-radius: 13px;
+            background: #f1f1f1;
+            color: #111;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s ease;
         }
-    }
-</style>
-<style>
-.login-modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.75);
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-}
 
-.login-box {
-    width: 360px;
-    max-width: 90%;
-    background: #1e1e1e;
-    padding: 30px;
-    border-radius: 16px;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
-    position: relative;
-    text-align: center;
-}
+        #sendButton:hover {
+            background: #fff;
+        }
 
-.login-box h2 {
-    color: white;
-    margin-bottom: 25px;
-}
+        #sendButton:active {
+            transform: scale(0.97);
+        }
 
-.login-box input {
-    width: 100%;
-    padding: 13px;
-    margin-bottom: 15px;
-    border: 1px solid #444;
-    border-radius: 8px;
-    background: #2b2b2b;
-    color: white;
-    outline: none;
-}
+        #sendButton:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
 
-.login-box input:focus {
-    border-color: #777;
-}
 
-.auth-submit {
-    width: 100%;
-    padding: 13px;
-    border: none;
-    border-radius: 8px;
-    background: #333;
-    color: white;
-    cursor: pointer;
-    font-size: 16px;
-}
+        /* ==========================================
+           SIDEBAR
+        ========================================== */
 
-.auth-submit:hover {
-    background: #444;
-}
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 370px;
+            max-width: 90vw;
+            height: 100vh;
+            padding: 18px;
+            background: #111;
+            color: #fff;
+            border-right: 1px solid #2a2a2a;
+            box-shadow: 10px 0 35px rgba(0, 0, 0, 0.45);
+            z-index: 2000;
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+            overflow-y: auto;
+        }
 
-.close-login {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    border: none;
-    background: none;
-    color: #aaa;
-    font-size: 28px;
-    cursor: pointer;
-}
+        .sidebar.open {
+            transform: translateX(0);
+        }
 
-.close-login:hover {
-    color: white;
-}
+        .sidebar::-webkit-scrollbar {
+            width: 7px;
+        }
 
-.auth-switch {
-    color: #aaa;
-    font-size: 14px;
-    margin-top: 20px;
-}
+        .sidebar::-webkit-scrollbar-track {
+            background: #111;
+        }
 
-.auth-switch button {
-    border: none;
-    background: none;
-    color: white;
-    cursor: pointer;
-    text-decoration: underline;
-}
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 10px;
+        }
 
-#authMessage {
-    min-height: 20px;
-    margin: 10px 0;
-    font-size: 14px;
-}
-</style>
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            font-size: 21px;
+        }
+
+        .sidebar-header b {
+            font-weight: 600;
+        }
+
+        #closeSidebar {
+            width: 36px;
+            height: 36px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #1b1b1b;
+            color: #bbb;
+            font-size: 21px;
+            cursor: pointer;
+        }
+
+        #closeSidebar:hover {
+            background: #292929;
+            color: #fff;
+        }
+
+        .sidebar-new-chat {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #333;
+            border-radius: 10px;
+            background: #f1f1f1;
+            color: #111;
+            cursor: pointer;
+            margin-bottom: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            transition: 0.2s ease;
+        }
+
+        .sidebar-new-chat:hover {
+            background: #fff;
+        }
+
+        #historySearch {
+            width: 100%;
+            height: 44px;
+            padding: 0 12px;
+            border: 1px solid #333;
+            border-radius: 10px;
+            outline: none;
+            margin-bottom: 8px;
+            font-size: 14px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        #historySearch::placeholder {
+            color: #777;
+        }
+
+        #historySearch:focus {
+            border-color: #555;
+        }
+
+        #clearHistorySearch {
+            width: 100%;
+            height: 40px;
+            padding: 8px;
+            border: 1px solid #333;
+            border-radius: 9px;
+            background: #1a1a1a;
+            color: #bbb;
+            cursor: pointer;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        #clearHistorySearch:hover {
+            background: #262626;
+            color: #fff;
+        }
+
+        #sidebarHistory > p {
+            color: #777;
+            font-size: 14px;
+            padding: 5px;
+        }
+
+        .sidebar-chat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 11px;
+            margin-bottom: 8px;
+            min-height: 50px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: #1a1a1a;
+            color: #ddd;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .sidebar-chat:hover {
+            background: #242424;
+            border-color: #333;
+        }
+
+        .sidebar-chat.active {
+            background: #292929;
+            border-color: #444;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .sidebar-chat-title {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .sidebar-actions {
+            display: flex;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-rename,
+        .sidebar-delete {
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: transparent;
+            color: #999;
+            cursor: pointer;
+            font-size: 15px;
+            padding: 4px;
+            border-radius: 7px;
+        }
+
+        .sidebar-rename:hover,
+        .sidebar-delete:hover {
+            background: #333;
+            color: #fff;
+        }
+
+
+        /* ==========================================
+           LOGIN MODAL
+        ========================================== */
+
+        .login-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.78);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            z-index: 9999;
+        }
+
+        .login-box {
+            width: 380px;
+            max-width: 100%;
+            background: #151515;
+            padding: 30px;
+            border: 1px solid #303030;
+            border-radius: 17px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+            position: relative;
+            text-align: center;
+        }
+
+        .login-box h2 {
+            color: #fff;
+            margin: 0 0 25px;
+            font-size: 23px;
+            font-weight: 600;
+        }
+
+        .login-box input {
+            width: 100%;
+            height: 48px;
+            padding: 0 13px;
+            margin-bottom: 13px;
+            border: 1px solid #363636;
+            border-radius: 9px;
+            background: #202020;
+            color: #fff;
+            outline: none;
+            font-size: 15px;
+        }
+
+        .login-box input::placeholder {
+            color: #777;
+        }
+
+        .login-box input:focus {
+            border-color: #666;
+            background: #242424;
+        }
+
+        .auth-submit {
+            width: 100%;
+            height: 48px;
+            padding: 0;
+            border: none;
+            border-radius: 9px;
+            background: #f1f1f1;
+            color: #111;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: 0.2s ease;
+        }
+
+        .auth-submit:hover {
+            background: #fff;
+        }
+
+        .auth-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .close-login {
+            position: absolute;
+            top: 11px;
+            right: 13px;
+            width: 34px;
+            height: 34px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #888;
+            font-size: 25px;
+            cursor: pointer;
+        }
+
+        .close-login:hover {
+            background: #292929;
+            color: #fff;
+        }
+
+        .auth-switch {
+            color: #888;
+            font-size: 14px;
+            margin: 20px 0 0;
+        }
+
+        .auth-switch button {
+            border: none;
+            background: none;
+            color: #fff;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 14px;
+        }
+
+        .auth-switch button:hover {
+            color: #ccc;
+        }
+
+        #authMessage {
+            min-height: 20px;
+            margin: 12px 0 0;
+            font-size: 14px;
+            color: #bbb;
+        }
+
+
+        /* ==========================================
+           TABLET
+        ========================================== */
+
+        @media (min-width: 601px) and (max-width: 900px) {
+
+            .header {
+                padding: 0 14px;
+            }
+
+            .header h1 {
+                font-size: 21px;
+            }
+
+            .header button {
+                padding: 9px 11px;
+                font-size: 13px;
+            }
+
+            .chat-box {
+                padding: 18px;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+
+            .sidebar {
+                width: 330px;
+            }
+        }
+
+
+        /* ==========================================
+           MOBILE
+        ========================================== */
+
+        @media (max-width: 600px) {
+
+            .header {
+                height: 64px;
+                padding: 0 9px;
+                gap: 6px;
+            }
+
+            .header h1 {
+                font-size: 19px;
+                white-space: nowrap;
+            }
+
+            .header-buttons {
+                gap: 4px;
+            }
+
+            .header button {
+                padding: 8px 8px;
+                font-size: 11px;
+                border-radius: 7px;
+            }
+
+            .chat-box {
+                height: calc(100vh - 128px);
+                padding: 13px 9px;
+            }
+
+            .message {
+                max-width: 92%;
+                padding: 10px 12px;
+                margin-bottom: 10px;
+                font-size: 14px;
+                line-height: 1.5;
+                border-radius: 11px;
+            }
+
+            .message b {
+                font-size: 12px;
+            }
+
+            .input-area {
+                height: 64px;
+                padding: 8px;
+                gap: 7px;
+            }
+
+            #message {
+                height: 48px;
+                padding: 0 11px;
+                font-size: 15px;
+                border-radius: 10px;
+            }
+
+            #sendButton {
+                width: 65px;
+                min-width: 65px;
+                height: 48px;
+                font-size: 13px;
+                border-radius: 10px;
+            }
+
+            .sidebar {
+                width: 88vw;
+                max-width: 340px;
+                padding: 14px;
+            }
+
+            .sidebar-header {
+                font-size: 20px;
+                margin-bottom: 14px;
+            }
+
+            .sidebar-new-chat {
+                padding: 12px;
+                font-size: 14px;
+            }
+
+            #historySearch {
+                height: 44px;
+                font-size: 14px;
+            }
+
+            #clearHistorySearch {
+                height: 38px;
+                font-size: 13px;
+            }
+
+            .sidebar-chat {
+                padding: 10px;
+                min-height: 48px;
+            }
+
+            .sidebar-chat-title {
+                font-size: 13px;
+            }
+
+            .sidebar-rename,
+            .sidebar-delete {
+                font-size: 14px;
+            }
+
+            .login-box {
+                width: calc(100vw - 30px);
+                padding: 25px 18px;
+                border-radius: 14px;
+            }
+
+            .login-box h2 {
+                font-size: 21px;
+                margin-bottom: 20px;
+            }
+
+            .login-box input {
+                height: 46px;
+                font-size: 14px;
+            }
+
+            .auth-submit {
+                height: 46px;
+                font-size: 14px;
+            }
+        }
+
+
+        /* ==========================================
+           VERY SMALL PHONES
+        ========================================== */
+
+        @media (max-width: 380px) {
+
+            .header h1 {
+                font-size: 17px;
+            }
+
+            .header-buttons {
+                gap: 3px;
+            }
+
+            .header button {
+                padding: 7px 6px;
+                font-size: 10px;
+            }
+
+            .message {
+                max-width: 95%;
+                font-size: 13px;
+            }
+
+            #sendButton {
+                width: 58px;
+                min-width: 58px;
+                font-size: 12px;
+            }
+        }
+    </style>
 </head>
 
 
@@ -659,30 +846,31 @@
 
         <h1>Normal Chat</h1>
 
-        
         <div class="header-buttons">
 
-    <button
-        id="historyButton"
-        type="button"
-    >
-        History
-    </button>
+            <button
+                id="historyButton"
+                type="button"
+            >
+                History
+            </button>
 
-    <button
-        id="newChatButton"
-        type="button"
-    >
-        New Chat
-    </button>
+            <button
+                id="newChatButton"
+                type="button"
+            >
+                New Chat
+            </button>
 
-     <button
-    id="loginButton"
-    type="button"
->
-    Login
-</button>
-</div>
+            <button
+                id="loginButton"
+                type="button"
+            >
+                Login
+            </button>
+
+        </div>
+
     </div>
 
 
@@ -709,7 +897,6 @@
             autocomplete="off"
         >
 
-
         <button
             id="sendButton"
             type="button"
@@ -720,45 +907,62 @@
     </div>
 
 
-    <!-- LOGIN MODAL -->
-<div id="loginModal" class="login-modal">
-    <div class="login-box">
+    <!-- =========================
+         LOGIN MODAL
+    ========================= -->
 
-        <button id="closeLoginModal" class="close-login">
-            ×
-        </button>
+    <div id="loginModal" class="login-modal">
 
-        <h2 id="authTitle">Login</h2>
+        <div class="login-box">
 
-        <input
-            type="text"
-            id="authUsername"
-            placeholder="Username"
-            autocomplete="username"
-        >
-
-        <input
-            type="password"
-            id="authPassword"
-            placeholder="Password"
-            autocomplete="current-password"
-        >
-
-        <button id="authSubmit" class="auth-submit">
-            Login
-        </button>
-
-        <p id="authMessage"></p>
-
-        <p class="auth-switch">
-            Don't have an account?
-            <button id="switchAuth" type="button">
-                Create Account
+            <button
+                id="closeLoginModal"
+                class="close-login"
+                type="button"
+            >
+                ×
             </button>
-        </p>
+
+            <h2 id="authTitle">Login</h2>
+
+            <input
+                type="text"
+                id="authUsername"
+                placeholder="Username"
+                autocomplete="username"
+            >
+
+            <input
+                type="password"
+                id="authPassword"
+                placeholder="Password"
+                autocomplete="current-password"
+            >
+
+            <button
+                id="authSubmit"
+                class="auth-submit"
+                type="button"
+            >
+                Login
+            </button>
+
+            <p id="authMessage"></p>
+
+            <p class="auth-switch">
+                Don't have an account?
+                <button
+                    id="switchAuth"
+                    type="button"
+                >
+                    Create Account
+                </button>
+            </p>
+
+        </div>
 
     </div>
-</div>
+
 
     <script>
 
@@ -767,117 +971,293 @@
         ================================= */
 
         const API_URL = "";
-const loginButton = document.getElementById("loginButton");
-        const loginModal = document.getElementById("loginModal");
-        const authTitle = document.getElementById("authTitle");
-        const authUsername = document.getElementById("authUsername");
-        const authPassword = document.getElementById("authPassword");
-        const authSubmit = document.getElementById("authSubmit");
-        const authMessage = document.getElementById("authMessage");
-        const switchAuth = document.getElementById("switchAuth");
-        const closeLoginModal = document.getElementById("closeLoginModal");
+
+        const loginButton =
+            document.getElementById("loginButton");
+
+        const loginModal =
+            document.getElementById("loginModal");
+
+        const authTitle =
+            document.getElementById("authTitle");
+
+        const authUsername =
+            document.getElementById("authUsername");
+
+        const authPassword =
+            document.getElementById("authPassword");
+
+        const authSubmit =
+            document.getElementById("authSubmit");
+
+        const authMessage =
+            document.getElementById("authMessage");
+
+        const switchAuth =
+            document.getElementById("switchAuth");
+
+        const closeLoginModal =
+            document.getElementById("closeLoginModal");
+
 
         let isSignupMode = false;
+
         let loggedInUsername = null;
 
+
         function updateAuthMode() {
-            authTitle.textContent = isSignupMode ? "Create Account" : "Login";
-            authSubmit.textContent = isSignupMode ? "Sign Up" : "Login";
-            switchAuth.textContent = isSignupMode ? "Login" : "Create Account";
+
+            authTitle.textContent =
+                isSignupMode
+                    ? "Create Account"
+                    : "Login";
+
+            authSubmit.textContent =
+                isSignupMode
+                    ? "Sign Up"
+                    : "Login";
+
+            switchAuth.textContent =
+                isSignupMode
+                    ? "Login"
+                    : "Create Account";
+
             document.querySelector(".auth-switch").firstChild.textContent =
-                isSignupMode ? "Already have an account? " : "Don't have an account? ";
+                isSignupMode
+                    ? "Already have an account? "
+                    : "Don't have an account? ";
         }
 
-        switchAuth.addEventListener("click", () => {
-            isSignupMode = !isSignupMode;
-            updateAuthMode();
-            authMessage.textContent = "";
-            authUsername.value = "";
-            authPassword.value = "";
-        });
 
-        loginButton.addEventListener("click", () => {
-            loginModal.style.display = "flex";
-            authUsername.focus();
-        });
+        switchAuth.addEventListener(
+            "click",
+            () => {
 
-        closeLoginModal.addEventListener("click", () => {
-            loginModal.style.display = "none";
-        });
+                isSignupMode =
+                    !isSignupMode;
 
-        loginModal.addEventListener("click", (event) => {
-            if (event.target === loginModal) loginModal.style.display = "none";
-        });
+                updateAuthMode();
+
+                authMessage.textContent = "";
+
+                authUsername.value = "";
+
+                authPassword.value = "";
+            }
+        );
+
+
+        loginButton.addEventListener(
+            "click",
+            () => {
+
+                loginModal.style.display =
+                    "flex";
+
+                authUsername.focus();
+            }
+        );
+
+
+        closeLoginModal.addEventListener(
+            "click",
+            () => {
+
+                loginModal.style.display =
+                    "none";
+            }
+        );
+
+
+        loginModal.addEventListener(
+            "click",
+            (event) => {
+
+                if (
+                    event.target === loginModal
+                ) {
+
+                    loginModal.style.display =
+                        "none";
+                }
+            }
+        );
+
 
         async function checkLoginStatus() {
+
             try {
-                const response = await fetch("/me", { credentials: "include" });
-                const data = await response.json();
+
+                const response =
+                    await fetch(
+                        "/me",
+                        {
+                            credentials: "include"
+                        }
+                    );
+
+                const data =
+                    await response.json();
+
+
                 if (data.logged_in) {
-                    loggedInUsername = data.username;
-                    loginButton.textContent = data.username;
+
+                    loggedInUsername =
+                        data.username;
+
+                    loginButton.textContent =
+                        data.username;
+
                 } else {
+
                     loggedInUsername = null;
-                    loginButton.textContent = "Login";
+
+                    loginButton.textContent =
+                        "Login";
                 }
+
             } catch (error) {
-                console.error("Login status error:", error);
+
+                console.error(
+                    "Login status error:",
+                    error
+                );
             }
         }
 
-        authSubmit.addEventListener("click", async () => {
-            const username = authUsername.value.trim();
-            const password = authPassword.value;
 
-            if (!username || !password) {
-                authMessage.textContent = "Username and password required";
-                return;
-            }
+        authSubmit.addEventListener(
+            "click",
+            async () => {
 
-            authSubmit.disabled = true;
-            authMessage.textContent = "Please wait...";
+                const username =
+                    authUsername.value.trim();
 
-            try {
-                const endpoint = isSignupMode ? "/signup" : "/login";
-                const response = await fetch(endpoint, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({ username, password })
-                });
+                const password =
+                    authPassword.value;
 
-                const contentType = response.headers.get("content-type") || "";
-                const data = contentType.includes("application/json")
-                    ? await response.json()
-                    : { error: `Server returned ${response.status} instead of JSON` };
 
-                if (!response.ok) {
-                    authMessage.textContent = data.error || "Something went wrong";
+                if (!username || !password) {
+
+                    authMessage.textContent =
+                        "Username and password required";
+
                     return;
                 }
 
-                authMessage.textContent = isSignupMode
-                    ? "Account created successfully!"
-                    : "Login successful!";
 
-                await checkLoginStatus();
+                authSubmit.disabled =
+                    true;
 
-                setTimeout(() => {
-                    loginModal.style.display = "none";
-                    authUsername.value = "";
-                    authPassword.value = "";
-                    authMessage.textContent = "";
-                    loadCurrentChat();
-                }, 500);
-            } catch (error) {
-                console.error("Auth error:", error);
-                authMessage.textContent = "Server connection error";
-            } finally {
-                authSubmit.disabled = false;
+                authMessage.textContent =
+                    "Please wait...";
+
+
+                try {
+
+                    const endpoint =
+                        isSignupMode
+                            ? "/signup"
+                            : "/login";
+
+
+                    const response =
+                        await fetch(
+                            endpoint,
+                            {
+                                method: "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                                credentials: "include",
+
+                                body: JSON.stringify({
+                                    username,
+                                    password
+                                })
+                            }
+                        );
+
+
+                    const contentType =
+                        response.headers.get(
+                            "content-type"
+                        ) || "";
+
+
+                    const data =
+                        contentType.includes(
+                            "application/json"
+                        )
+                            ? await response.json()
+                            : {
+                                error:
+                                    `Server returned ${response.status} instead of JSON`
+                            };
+
+
+                    if (!response.ok) {
+
+                        authMessage.textContent =
+                            data.error ||
+                            "Something went wrong";
+
+                        return;
+                    }
+
+
+                    authMessage.textContent =
+                        isSignupMode
+                            ? "Account created successfully!"
+                            : "Login successful!";
+
+
+                    await checkLoginStatus();
+
+
+                    setTimeout(
+                        () => {
+
+                            loginModal.style.display =
+                                "none";
+
+                            authUsername.value = "";
+
+                            authPassword.value = "";
+
+                            authMessage.textContent = "";
+
+                            loadCurrentChat();
+
+                        },
+                        500
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Auth error:",
+                        error
+                    );
+
+                    authMessage.textContent =
+                        "Server connection error";
+
+                } finally {
+
+                    authSubmit.disabled =
+                        false;
+                }
             }
-        });
+        );
+
 
         checkLoginStatus();
+
 
         /* =================================
            VARIABLES
@@ -960,23 +1340,32 @@ const loginButton = document.getElementById("loginButton");
                     "normalChatCurrent"
                 );
 
+
             if (!savedChat) {
                 return;
             }
+
 
             try {
 
                 const parsed =
                     JSON.parse(savedChat);
 
+
                 if (!Array.isArray(parsed)) {
+
                     conversationHistory = [];
+
                     return;
                 }
 
-                conversationHistory = parsed;
+
+                conversationHistory =
+                    parsed;
+
 
                 chatBox.innerHTML = "";
+
 
                 conversationHistory.forEach(
                     function (msg) {
@@ -989,8 +1378,10 @@ const loginButton = document.getElementById("loginButton");
                     }
                 );
 
+
                 chatBox.scrollTop =
                     chatBox.scrollHeight;
+
 
             } catch (error) {
 
@@ -999,7 +1390,9 @@ const loginButton = document.getElementById("loginButton");
                     error
                 );
 
+
                 conversationHistory = [];
+
 
                 localStorage.removeItem(
                     "normalChatCurrent"
@@ -1020,6 +1413,7 @@ const loginButton = document.getElementById("loginButton");
             const div =
                 document.createElement("div");
 
+
             div.className =
                 "message " +
                 (
@@ -1028,15 +1422,18 @@ const loginButton = document.getElementById("loginButton");
                         : "bot"
                 );
 
+
             const name =
                 role === "user"
                     ? "You"
                     : "Normal Chat";
 
+
             div.innerHTML = `
                 <b>${name}:</b><br>
                 ${escapeHtml(content)}
             `;
+
 
             chatBox.appendChild(div);
         }
@@ -1051,12 +1448,14 @@ const loginButton = document.getElementById("loginButton");
             const message =
                 messageInput.value.trim();
 
+
             if (!message) {
                 return;
             }
 
 
-            sendButton.disabled = true;
+            sendButton.disabled =
+                true;
 
 
             /* USER MESSAGE */
@@ -1066,12 +1465,15 @@ const loginButton = document.getElementById("loginButton");
                 content: message
             });
 
+
             addMessageToScreen(
                 "user",
                 message
             );
 
+
             messageInput.value = "";
+
 
             saveCurrentChat();
 
@@ -1081,11 +1483,14 @@ const loginButton = document.getElementById("loginButton");
             const thinking =
                 document.createElement("div");
 
+
             thinking.className =
                 "message bot";
 
+
             thinking.id =
                 "thinking";
+
 
             thinking.innerHTML = `
                 <b>Normal Chat:</b><br>
@@ -1097,7 +1502,11 @@ const loginButton = document.getElementById("loginButton");
                 </span>
             `;
 
-            chatBox.appendChild(thinking);
+
+            chatBox.appendChild(
+                thinking
+            );
+
 
             chatBox.scrollTop =
                 chatBox.scrollHeight;
@@ -1144,7 +1553,9 @@ const loginButton = document.getElementById("loginButton");
 
 
                 const reply =
-                    String(data.reply || "").trim();
+                    String(
+                        data.reply || ""
+                    ).trim();
 
 
                 if (!reply) {
@@ -1162,10 +1573,12 @@ const loginButton = document.getElementById("loginButton");
                     content: reply
                 });
 
+
                 addMessageToScreen(
                     "assistant",
                     reply
                 );
+
 
                 saveCurrentChat();
 
@@ -1195,7 +1608,8 @@ const loginButton = document.getElementById("loginButton");
 
             } finally {
 
-                sendButton.disabled = false;
+                sendButton.disabled =
+                    false;
 
                 messageInput.focus();
             }
@@ -1205,62 +1619,80 @@ const loginButton = document.getElementById("loginButton");
         /* =================================
            NEW CHAT
         ================================= */
+
         async function newChat() {
-    try {
 
-        const response = await fetch(
-            `${API_URL}/new-chat`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    history: conversationHistory
-                })
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/new-chat`,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                history:
+                                    conversationHistory
+                            })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "New Chat error"
+                    );
+                }
+
+
+                conversationHistory = [];
+
+
+                localStorage.removeItem(
+                    "normalChatCurrent"
+                );
+
+
+                chatBox.innerHTML = "";
+
+
+                messageInput.value = "";
+
+
+                sidebar.classList.remove(
+                    "open"
+                );
+
+
+                messageInput.focus();
+
+
+            } catch (error) {
+
+                console.error(
+                    "New Chat error:",
+                    error
+                );
+
+
+                alert(
+                    "New Chat nahi bana: " +
+                    error.message
+                );
             }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(
-                data.error ||
-                "New Chat error"
-            );
         }
 
-        conversationHistory = [];
-
-        localStorage.removeItem(
-            "normalChatCurrent"
-        );
-
-        chatBox.innerHTML = "";
-
-        messageInput.value = "";
-
-        sidebar.classList.remove(
-            "open"
-        );
-
-        messageInput.focus();
-
-    } catch (error) {
-
-        console.error(
-            "New Chat error:",
-            error
-        );
-
-        alert(
-            "New Chat nahi bana: " +
-            error.message
-        );
-    }
-}
-        
-        
 
         /* =================================
            SHOW SIDEBAR
@@ -1268,7 +1700,10 @@ const loginButton = document.getElementById("loginButton");
 
         async function showSidebar() {
 
-            sidebar.classList.add("open");
+            sidebar.classList.add(
+                "open"
+            );
+
 
             sidebarHistory.innerHTML =
                 "<p>Loading...</p>";
@@ -1295,11 +1730,14 @@ const loginButton = document.getElementById("loginButton");
                 }
 
 
-                sidebarHistory.innerHTML = "";
+                sidebarHistory.innerHTML =
+                    "";
 
 
                 if (
-                    !Array.isArray(data.history) ||
+                    !Array.isArray(
+                        data.history
+                    ) ||
                     data.history.length === 0
                 ) {
 
@@ -1310,21 +1748,14 @@ const loginButton = document.getElementById("loginButton");
                 }
 
 
-                /*
-                 * Latest chat first.
-                 */
-
                 data.history
                     .slice()
                     .reverse()
                     .forEach(
-                        function (chat, reverseIndex) {
-
-                            /*
-                             * IMPORTANT:
-                             * This is the real index
-                             * inside backend history.
-                             */
+                        function (
+                            chat,
+                            reverseIndex
+                        ) {
 
                             const realIndex =
                                 data.history.length -
@@ -1369,12 +1800,15 @@ const loginButton = document.getElementById("loginButton");
             const item =
                 document.createElement("div");
 
+
             item.className =
                 "sidebar-chat";
 
 
             const messages =
-                Array.isArray(chat.messages)
+                Array.isArray(
+                    chat.messages
+                )
                     ? chat.messages
                     : [];
 
@@ -1406,26 +1840,29 @@ const loginButton = document.getElementById("loginButton");
                     : defaultTitle;
 
 
-            /* =================================
-               TITLE
-            ================================= */
+            /* TITLE */
 
             const title =
-                document.createElement("span");
+                document.createElement(
+                    "span"
+                );
+
 
             title.className =
                 "sidebar-chat-title";
+
 
             title.textContent =
                 currentTitle;
 
 
-            /* =================================
-               ACTIONS
-            ================================= */
+            /* ACTIONS */
 
             const actions =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
+
 
             actions.className =
                 "sidebar-actions";
@@ -1434,16 +1871,22 @@ const loginButton = document.getElementById("loginButton");
             /* RENAME */
 
             const renameButton =
-                document.createElement("button");
+                document.createElement(
+                    "button"
+                );
+
 
             renameButton.type =
                 "button";
 
+
             renameButton.className =
                 "sidebar-rename";
 
+
             renameButton.title =
                 "Rename";
+
 
             renameButton.textContent =
                 "✏️";
@@ -1452,16 +1895,22 @@ const loginButton = document.getElementById("loginButton");
             /* DELETE */
 
             const deleteButton =
-                document.createElement("button");
+                document.createElement(
+                    "button"
+                );
+
 
             deleteButton.type =
                 "button";
 
+
             deleteButton.className =
                 "sidebar-delete";
 
+
             deleteButton.title =
                 "Delete";
+
 
             deleteButton.textContent =
                 "🗑️";
@@ -1470,6 +1919,7 @@ const loginButton = document.getElementById("loginButton");
             actions.appendChild(
                 renameButton
             );
+
 
             actions.appendChild(
                 deleteButton
@@ -1480,14 +1930,13 @@ const loginButton = document.getElementById("loginButton");
                 title
             );
 
+
             item.appendChild(
                 actions
             );
 
 
-            /* =================================
-               OPEN CHAT
-            ================================= */
+            /* OPEN CHAT */
 
             item.addEventListener(
                 "click",
@@ -1498,12 +1947,15 @@ const loginButton = document.getElementById("loginButton");
                             ".sidebar-chat"
                         )
                         .forEach(
-                            function (chatItem) {
+                            function (
+                                chatItem
+                            ) {
 
                                 chatItem.classList
                                     .remove(
                                         "active"
                                     );
+
                             }
                         );
 
@@ -1525,9 +1977,7 @@ const loginButton = document.getElementById("loginButton");
             );
 
 
-            /* =================================
-               RENAME
-            ================================= */
+            /* RENAME */
 
             renameButton.addEventListener(
                 "click",
@@ -1545,7 +1995,9 @@ const loginButton = document.getElementById("loginButton");
                         );
 
 
-                    if (newName === null) {
+                    if (
+                        newName === null
+                    ) {
                         return;
                     }
 
@@ -1578,7 +2030,8 @@ const loginButton = document.getElementById("loginButton");
                                     },
 
                                     body: JSON.stringify({
-                                        name: trimmedName
+                                        name:
+                                            trimmedName
                                     })
                                 }
                             );
@@ -1617,9 +2070,7 @@ const loginButton = document.getElementById("loginButton");
             );
 
 
-            /* =================================
-               DELETE
-            ================================= */
+            /* DELETE */
 
             deleteButton.addEventListener(
                 "click",
@@ -1698,7 +2149,9 @@ const loginButton = document.getElementById("loginButton");
         function openHistoryChat(chat) {
 
             conversationHistory =
-                Array.isArray(chat.messages)
+                Array.isArray(
+                    chat.messages
+                )
                     ? chat.messages
                     : [];
 
@@ -1752,7 +2205,9 @@ const loginButton = document.getElementById("loginButton");
                         ".sidebar-chat"
                     )
                     .forEach(
-                        function (chatItem) {
+                        function (
+                            chatItem
+                        ) {
 
                             const text =
                                 chatItem.innerText
@@ -1779,7 +2234,8 @@ const loginButton = document.getElementById("loginButton");
             "click",
             function () {
 
-                historySearch.value = "";
+                historySearch.value =
+                    "";
 
 
                 document
@@ -1787,7 +2243,9 @@ const loginButton = document.getElementById("loginButton");
                         ".sidebar-chat"
                     )
                     .forEach(
-                        function (chatItem) {
+                        function (
+                            chatItem
+                        ) {
 
                             chatItem.style.display =
                                 "flex";
