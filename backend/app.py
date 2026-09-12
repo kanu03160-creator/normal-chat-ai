@@ -1,12 +1,15 @@
 import psycopg2
 import json
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, request, jsonify, send_from_directory, session
+from flask import Flask, request, jsonify, send_from_directory, session, Response, stream_with_context
 
 from google import genai
 import re
 import os
 import threading
+import time
+import queue
+import json as json_module
 
 from chat_history import add_chat, load_history, delete_chat, rename_chat
 from memory import load_memory, update_memory
@@ -19,6 +22,8 @@ from memory import load_memory, update_memory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "..", "data")
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
+
+os.makedirs(DATA_DIR, exist_ok=True)
 
 
 def load_users():
@@ -35,7 +40,6 @@ def load_users():
 def save_users(users):
     with open(USERS_FILE, "w", encoding="utf-8") as file:
         json.dump(users, file, indent=4, ensure_ascii=False)
-os.makedirs(DATA_DIR, exist_ok=True)
 
 
 # ==========================================
@@ -49,9 +53,16 @@ if not SECRET_KEY:
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("RENDER") == "true"
+
+
+# ==========================================
+# DATABASE
+# ==========================================
+
 def get_db_connection():
     database_url = os.environ.get("DATABASE_URL")
 
@@ -59,11 +70,16 @@ def get_db_connection():
         raise RuntimeError("DATABASE_URL is not set")
 
     return psycopg2.connect(database_url)
+
+
 def init_db():
+
     conn = get_db_connection()
 
     try:
+
         with conn.cursor() as cursor:
+
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS memories (
                     username TEXT NOT NULL,
@@ -72,15 +88,15 @@ def init_db():
                     PRIMARY KEY (username, key)
                 )
             """)
-            
+
             cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
-    )
-""")
-                        # chat history table
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL
+                )
+            """)
+
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS chat_history (
                     id SERIAL PRIMARY KEY,
@@ -90,10 +106,13 @@ def init_db():
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+
         conn.commit()
 
     finally:
         conn.close()
+
+
 # ==========================================
 # GEMINI
 # ==========================================
@@ -105,17 +124,11 @@ client = genai.Client()
 
 
 # ==========================================
-# MEMORY
-# ==========================================
-
-
-
-
-# ==========================================
 # MEMORY HELPERS
 # ==========================================
 
 def clean_value(value):
+
     value = str(value).strip()
 
     value = re.sub(
@@ -131,6 +144,7 @@ def clean_value(value):
 
 
 def save_memory(key, value, user_memory):
+
     username = session.get("username")
 
     if not username:
@@ -150,6 +164,8 @@ def save_memory(key, value, user_memory):
     user_memory[key] = value
 
     print(f"Memory saved: {key} = {value}")
+
+
 # ==========================================
 # AUTOMATIC MEMORY DETECTION
 # ==========================================
@@ -255,6 +271,7 @@ def detect_memory(message, user_memory):
 
         return
 
+
 # ==========================================
 # PERSONAL QUESTIONS
 # ==========================================
@@ -276,6 +293,7 @@ def personal_answer(message, user_memory):
         "aapka naam kya hai",
         "aapke naam kya hai"
     ]):
+
         return "Mera naam Normal Chat hai."
 
     # USER NAME
@@ -345,6 +363,7 @@ def personal_answer(message, user_memory):
 
     return None
 
+
 # ==========================================
 # SIGNUP
 # ==========================================
@@ -353,6 +372,7 @@ def personal_answer(message, user_memory):
 def signup():
 
     try:
+
         data = request.get_json(silent=True)
 
         if not data:
@@ -360,8 +380,13 @@ def signup():
                 "error": "Request data missing"
             }), 400
 
-        username = str(data.get("username", "")).strip()
-        password = str(data.get("password", ""))
+        username = str(
+            data.get("username", "")
+        ).strip()
+
+        password = str(
+            data.get("password", "")
+        )
 
         if not username or not password:
             return jsonify({
@@ -383,18 +408,24 @@ def signup():
         conn = get_db_connection()
 
         try:
+
             with conn.cursor() as cursor:
+
                 cursor.execute(
                     """
                     INSERT INTO users (username, password)
                     VALUES (%s, %s)
                     """,
-                    (username, password_hash)
+                    (
+                        username,
+                        password_hash
+                    )
                 )
 
             conn.commit()
 
         except psycopg2.errors.UniqueViolation:
+
             conn.rollback()
 
             return jsonify({
@@ -412,11 +443,17 @@ def signup():
         }), 201
 
     except Exception as error:
-      print("Backend error:", repr(error))
 
-    return jsonify({
-        "error": str(error)
-    }), 500
+        print(
+            "Backend error:",
+            repr(error)
+        )
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+
 # ==========================================
 # LOGIN
 # ==========================================
@@ -425,6 +462,7 @@ def signup():
 def login():
 
     try:
+
         data = request.get_json(silent=True)
 
         if not data:
@@ -432,8 +470,13 @@ def login():
                 "error": "Request data missing"
             }), 400
 
-        username = str(data.get("username", "")).strip()
-        password = str(data.get("password", ""))
+        username = str(
+            data.get("username", "")
+        ).strip()
+
+        password = str(
+            data.get("password", "")
+        )
 
         if not username or not password:
             return jsonify({
@@ -443,7 +486,9 @@ def login():
         conn = get_db_connection()
 
         try:
+
             with conn.cursor() as cursor:
+
                 cursor.execute(
                     """
                     SELECT username, password
@@ -459,13 +504,18 @@ def login():
             conn.close()
 
         if not user:
+
             return jsonify({
                 "error": "Invalid username or password"
             }), 401
 
         stored_username, stored_password = user
 
-        if not check_password_hash(stored_password, password):
+        if not check_password_hash(
+            stored_password,
+            password
+        ):
+
             return jsonify({
                 "error": "Invalid username or password"
             }), 401
@@ -478,17 +528,36 @@ def login():
         }), 200
 
     except Exception as error:
-      import traceback
 
-    print("========== LOGIN ERROR ==========")
-    print("ERROR:", repr(error))
-    traceback.print_exc()
-    print("=================================")
+        import traceback
+
+        print("========== LOGIN ERROR ==========")
+        print("ERROR:", repr(error))
+
+        traceback.print_exc()
+
+        print("=================================")
+
+        return jsonify({
+            "error": "Login error",
+            "details": str(error)
+        }), 500
+
+
+# ==========================================
+# LOGOUT
+# ==========================================
+
+@app.route("/logout", methods=["POST"])
+def logout():
+
+    session.clear()
 
     return jsonify({
-        "error": "Login error",
-        "details": str(error)
-    }), 500
+        "message": "Logged out successfully"
+    })
+
+
 # ==========================================
 # CURRENT USER
 # ==========================================
@@ -499,6 +568,7 @@ def me():
     username = session.get("username")
 
     if username:
+
         return jsonify({
             "logged_in": True,
             "username": username
@@ -506,7 +576,9 @@ def me():
 
     return jsonify({
         "logged_in": False
-    })   
+    })
+
+
 # ==========================================
 # HOME
 # ==========================================
@@ -533,26 +605,93 @@ def health():
 
 
 # ==========================================
+# GEMINI GENERATION HELPER
+# ==========================================
+
+def generate_ai_reply(prompt):
+
+    response = None
+    last_error = None
+
+    models_to_try = [
+        MODEL,
+        FALLBACK_MODEL
+    ]
+
+    for current_model in models_to_try:
+
+        for attempt in range(2):
+
+            try:
+
+                print(
+                    f"Trying Gemini model: "
+                    f"{current_model} "
+                    f"(attempt {attempt + 1})"
+                )
+
+                response = client.models.generate_content(
+                    model=current_model,
+                    contents=prompt
+                )
+
+                if response and response.text:
+                    return response.text.strip()
+
+            except Exception as error:
+
+                last_error = error
+
+                error_text = str(error)
+
+                print(
+                    f"Gemini error on "
+                    f"{current_model}: "
+                    f"{error_text}"
+                )
+
+                if (
+                    "503" in error_text
+                    or
+                    "UNAVAILABLE" in error_text
+                ):
+
+                    time.sleep(2)
+
+                    continue
+
+                raise
+
+    if last_error:
+        raise last_error
+
+    raise Exception(
+        "Gemini ne response nahi diya."
+    )
+
+
+# ==========================================
 # CHAT
 # ==========================================
 
 @app.route("/chat", methods=["POST"])
 def chat():
 
-    
-
-
     username = session.get("username")
 
     if not username:
+
         return jsonify({
             "error": "Login required"
         }), 401
 
     user_memory = load_memory(username)
+
     try:
 
-        data = request.get_json(silent=True)
+        data = request.get_json(
+            silent=True
+        )
 
         if not data or "message" not in data:
 
@@ -569,10 +708,13 @@ def chat():
             return jsonify({
                 "error": "Message is empty"
             }), 400
+
         if len(message) > 5000:
-           return jsonify({
-               "error": "Message too long. Maximum 5000 characters allowed."
-           }), 400
+
+            return jsonify({
+                "error": "Message too long. Maximum 5000 characters allowed."
+            }), 400
+
         history_from_frontend = data.get(
             "history",
             []
@@ -582,23 +724,67 @@ def chat():
         # PERSONAL QUESTION
         # ======================================
 
-        direct_reply = personal_answer(message, user_memory)
+        direct_reply = personal_answer(
+            message,
+            user_memory
+        )
 
         if direct_reply:
 
-            
+            # Direct answers also stream
+            def direct_stream():
 
-            return jsonify({
-                "reply": direct_reply
-            })
+                # Small chunks for ChatGPT-like effect
+                words = direct_reply.split(" ")
 
+                for i, word in enumerate(words):
+
+                    chunk = word
+
+                    if i < len(words) - 1:
+                        chunk += " "
+
+                    yield (
+                        "data: "
+                        +
+                        json_module.dumps({
+                            "type": "chunk",
+                            "text": chunk
+                        })
+                        +
+                        "\n\n"
+                    )
+
+                    time.sleep(0.02)
+
+                yield (
+                    "data: "
+                    +
+                    json_module.dumps({
+                        "type": "done"
+                    })
+                    +
+                    "\n\n"
+                )
+
+            return Response(
+                stream_with_context(direct_stream()),
+                mimetype="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "X-Accel-Buffering": "no",
+                    "Connection": "keep-alive"
+                }
+            )
 
         # ======================================
         # MEMORY
         # ======================================
 
-        detect_memory(message, user_memory)
-
+        detect_memory(
+            message,
+            user_memory
+        )
 
         # ======================================
         # MEMORY TEXT
@@ -615,7 +801,6 @@ def chat():
         memory_text = "\n".join(
             memory_lines
         )
-
 
         # ======================================
         # SYSTEM PROMPT
@@ -638,7 +823,6 @@ User information:
 {memory_text}
 """
 
-
         # ======================================
         # CONVERSATION
         # ======================================
@@ -649,21 +833,21 @@ User information:
 
         for msg in previous_messages:
 
-          role = msg.get("role")
-          content = msg.get("content")
+            role = msg.get("role")
+            content = msg.get("content")
 
-          if role in ["user", "assistant"] and content:
+            if (
+                role in ["user", "assistant"]
+                and content
+            ):
 
-             conversation_messages.append(
-            f"{role}: {content}"
-        )
+                conversation_messages.append(
+                    f"{role}: {content}"
+                )
 
-
-        
         conversation_text = "\n".join(
             conversation_messages
         )
-
 
         # ======================================
         # GEMINI PROMPT
@@ -678,77 +862,19 @@ Conversation:
 user: {message}
 """
 
-
         # ======================================
-        # GEMINI REQUEST
+        # GENERATE COMPLETE RESPONSE
         # ======================================
+        #
+        # IMPORTANT:
+        # Gemini normal generate_content()
+        # returns the response after generation.
+        #
+        # We then stream the completed text
+        # to the browser in small chunks.
+        #
 
-                # ======================================
-        # GEMINI REQUEST WITH RETRY + FALLBACK
-        # ======================================
-
-        response = None
-        last_error = None
-
-        models_to_try = [
-            MODEL,
-            FALLBACK_MODEL
-        ]
-
-        for current_model in models_to_try:
-
-            for attempt in range(2):
-
-                try:
-
-                    print(
-                        f"Trying Gemini model: {current_model} "
-                        f"(attempt {attempt + 1})"
-                    )
-
-                    response = client.models.generate_content(
-                        model=current_model,
-                        contents=prompt
-                    )
-
-                    if response and response.text:
-                        break
-
-                except Exception as error:
-
-                    last_error = error
-
-                    error_text = str(error)
-
-                    print(
-                        f"Gemini error on {current_model}: "
-                        f"{error_text}"
-                    )
-
-                    # Only retry temporary server overload errors
-                    if "503" in error_text or "UNAVAILABLE" in error_text:
-
-                        import time
-
-                        time.sleep(2)
-
-                        continue
-
-                    # Other errors should not be retried
-                    raise
-
-            if response and response.text:
-                break
-
-        if not response or not response.text:
-
-            if last_error:
-                raise last_error
-
-            raise Exception(
-                "Gemini ne response nahi diya."
-            ) 
-        reply = (response.text or "").strip()
+        reply = generate_ai_reply(prompt)
 
         if not reply:
 
@@ -756,31 +882,72 @@ user: {message}
                 "AI ne empty response diya."
             )
 
-
-        
-
-
         # ======================================
-        # RESPONSE
+        # STREAM RESPONSE
         # ======================================
 
-        return jsonify({
-            "reply": reply
-        })
+        def generate_stream():
 
+            # Send chunks by words
+            words = reply.split(" ")
 
-    except Exception as error:
-        import traceback
+            for i, word in enumerate(words):
 
-        print("========== CHAT ERROR ==========")
-        print("ERROR:", repr(error))
-        traceback.print_exc()
-        print("================================")
+                chunk = word
 
-        return jsonify({
-            "error": "Internal server error",
-            "details": str(error)
-        }), 500
+                if i < len(words) - 1:
+                    chunk += " "
+
+                yield (
+                    "data: "
+                    +
+                    json_module.dumps({
+                        "type": "chunk",
+                        "text": chunk
+                    })
+                    +
+                    "\n\n"
+                )
+
+                # Small delay for visible streaming
+                time.sleep(0.015)
+
+            yield (
+                "data: "
+                +
+                json_module.dumps({
+                    "type": "done"
+                })
+                +
+                "\n\n"
+            )
+
+        return Response(
+            stream_with_context(generate_stream()),
+            mimetype="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive"
+            }
+        )
+
+    except Exception as chat_error:
+
+     import traceback
+
+    print("========== CHAT ERROR ==========")
+    print("ERROR:", repr(chat_error))
+
+    traceback.print_exc()
+
+    print("================================")
+
+    return jsonify({
+        "error": "Internal server error",
+        "details": str(chat_error)
+    }), 500
+
 
 # ==========================================
 # HISTORY
@@ -792,6 +959,7 @@ def history():
     username = session.get("username")
 
     if not username:
+
         return jsonify({
             "error": "Login required"
         }), 401
@@ -804,16 +972,18 @@ def history():
 
     except Exception as error:
 
-      import traceback
+        import traceback
 
-    print("========== HISTORY ERROR ==========")
-    print("ERROR:", repr(error))
-    traceback.print_exc()
-    print("===================================")
+        print("========== HISTORY ERROR ==========")
+        print("ERROR:", repr(error))
 
-    return jsonify({
-        "error": str(error)
-    }), 500
+        traceback.print_exc()
+
+        print("===================================")
+
+        return jsonify({
+            "error": str(error)
+        }), 500
 
 
 # ==========================================
@@ -823,25 +993,31 @@ def history():
 @app.route("/new-chat", methods=["POST"])
 def new_chat():
 
-
     username = session.get("username")
 
     if not username:
-       return jsonify({
-        "error": "Login required"
-    }), 401
+
+        return jsonify({
+            "error": "Login required"
+        }), 401
+
     try:
 
-        data = request.get_json(silent=True) or {}
+        data = request.get_json(
+            silent=True
+        ) or {}
 
-        history = data.get("history", [])
+        history_data = data.get(
+            "history",
+            []
+        )
 
-        if history:
-          add_chat(
-        history,
-        username
-    )
-        
+        if history_data:
+
+            add_chat(
+                history_data,
+                username
+            )
 
         return jsonify({
             "message": "New chat started"
@@ -849,8 +1025,14 @@ def new_chat():
 
     except Exception as error:
 
+        print(
+            "New chat error:",
+            repr(error)
+        )
+
         return jsonify({
-            "error": "Internal server error"
+            "error": "Internal server error",
+            "details": str(error)
         }), 500
 
 
@@ -863,18 +1045,21 @@ def new_chat():
     methods=["DELETE"]
 )
 def delete_history(index):
+
     username = session.get("username")
 
     if not username:
+
         return jsonify({
-        "error": "Login required"
-    }), 401
+            "error": "Login required"
+        }), 401
+
     try:
 
         success = delete_chat(
-    index,
-    username
-)
+            index,
+            username
+        )
 
         if not success:
 
@@ -887,6 +1072,11 @@ def delete_history(index):
         })
 
     except Exception as error:
+
+        print(
+            "Delete history error:",
+            repr(error)
+        )
 
         return jsonify({
             "error": "Internal server error"
@@ -906,6 +1096,7 @@ def rename_history(index):
     username = session.get("username")
 
     if not username:
+
         return jsonify({
             "error": "Login required"
         }), 401
@@ -925,7 +1116,6 @@ def rename_history(index):
         title = data.get("name")
 
         if title is None:
-
             title = data.get("title")
 
         if title is None:
@@ -947,10 +1137,10 @@ def rename_history(index):
         title = title[:40]
 
         success = rename_chat(
-    index,
-    title,
-    username
-)
+            index,
+            title,
+            username
+        )
 
         if not success:
 
@@ -967,7 +1157,7 @@ def rename_history(index):
 
         print(
             "Rename error:",
-            error
+            repr(error)
         )
 
         return jsonify({
@@ -982,29 +1172,52 @@ def rename_history(index):
 _db_initialized = False
 _db_init_lock = threading.Lock()
 
+
 @app.before_request
 def ensure_database():
+
     global _db_initialized
 
-    # The homepage can load even if the database is temporarily unavailable.
-    if request.path == "/" or request.path.startswith("/static/"):
+    if (
+        request.path == "/"
+        or
+        request.path.startswith("/static/")
+    ):
+
         return None
 
     if _db_initialized:
         return None
 
     with _db_init_lock:
+
         if _db_initialized:
             return None
 
         try:
+
             init_db()
+
             _db_initialized = True
-            print("PostgreSQL database initialized successfully.")
+
+            print(
+                "PostgreSQL database initialized successfully."
+            )
+
         except Exception as error:
-            print("========== DATABASE INIT ERROR ==========")
-            print("ERROR:", repr(error))
-            print("=========================================")
+
+            print(
+                "========== DATABASE INIT ERROR =========="
+            )
+
+            print(
+                "ERROR:",
+                repr(error)
+            )
+
+            print(
+                "========================================="
+            )
 
             return jsonify({
                 "error": "Database connection failed",
@@ -1019,6 +1232,7 @@ def ensure_database():
 # ==========================================
 
 if __name__ == "__main__":
+
     port = int(
         os.environ.get(
             "PORT",
@@ -1029,5 +1243,6 @@ if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=port,
-        debug=False
+        debug=False,
+        threaded=True
     )
