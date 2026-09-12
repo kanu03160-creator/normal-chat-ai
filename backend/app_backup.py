@@ -1,11 +1,17 @@
+import urllib.parse
+import urllib.request
 import psycopg2
 import json
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, request, jsonify, send_from_directory, session
+from flask import Flask, request, jsonify, send_from_directory, session, Response, stream_with_context
 
 from google import genai
 import re
 import os
+import threading
+import time
+import queue
+import json as json_module
 
 from chat_history import add_chat, load_history, delete_chat, rename_chat
 from memory import load_memory, update_memory
@@ -18,6 +24,8 @@ from memory import load_memory, update_memory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "..", "data")
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
+
+os.makedirs(DATA_DIR, exist_ok=True)
 
 
 def load_users():
@@ -34,7 +42,6 @@ def load_users():
 def save_users(users):
     with open(USERS_FILE, "w", encoding="utf-8") as file:
         json.dump(users, file, indent=4, ensure_ascii=False)
-os.makedirs(DATA_DIR, exist_ok=True)
 
 
 # ==========================================
@@ -48,9 +55,16 @@ if not SECRET_KEY:
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("RENDER") == "true"
+
+
+# ==========================================
+# DATABASE
+# ==========================================
+
 def get_db_connection():
     database_url = os.environ.get("DATABASE_URL")
 
@@ -58,11 +72,16 @@ def get_db_connection():
         raise RuntimeError("DATABASE_URL is not set")
 
     return psycopg2.connect(database_url)
+
+
 def init_db():
+
     conn = get_db_connection()
 
     try:
+
         with conn.cursor() as cursor:
+
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS memories (
                     username TEXT NOT NULL,
@@ -71,15 +90,15 @@ def init_db():
                     PRIMARY KEY (username, key)
                 )
             """)
-            
+
             cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
-    )
-""")
-                        # chat history table
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL
+                )
+            """)
+
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS chat_history (
                     id SERIAL PRIMARY KEY,
@@ -89,24 +108,21 @@ def init_db():
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+
         conn.commit()
 
     finally:
         conn.close()
+
+
 # ==========================================
 # GEMINI
 # ==========================================
 
 MODEL = "gemini-3.6-flash"
+FALLBACK_MODEL = "gemini-2.5-flash-lite"
 
 client = genai.Client()
-
-
-# ==========================================
-# MEMORY
-# ==========================================
-
-
 
 
 # ==========================================
@@ -114,6 +130,7 @@ client = genai.Client()
 # ==========================================
 
 def clean_value(value):
+
     value = str(value).strip()
 
     value = re.sub(
@@ -129,6 +146,7 @@ def clean_value(value):
 
 
 def save_memory(key, value, user_memory):
+
     username = session.get("username")
 
     if not username:
@@ -148,6 +166,8 @@ def save_memory(key, value, user_memory):
     user_memory[key] = value
 
     print(f"Memory saved: {key} = {value}")
+
+
 # ==========================================
 # AUTOMATIC MEMORY DETECTION
 # ==========================================
@@ -253,6 +273,7 @@ def detect_memory(message, user_memory):
 
         return
 
+
 # ==========================================
 # PERSONAL QUESTIONS
 # ==========================================
@@ -274,6 +295,7 @@ def personal_answer(message, user_memory):
         "aapka naam kya hai",
         "aapke naam kya hai"
     ]):
+
         return "Mera naam Normal Chat hai."
 
     # USER NAME
@@ -343,6 +365,7 @@ def personal_answer(message, user_memory):
 
     return None
 
+
 # ==========================================
 # SIGNUP
 # ==========================================
@@ -351,6 +374,7 @@ def personal_answer(message, user_memory):
 def signup():
 
     try:
+
         data = request.get_json(silent=True)
 
         if not data:
@@ -358,8 +382,13 @@ def signup():
                 "error": "Request data missing"
             }), 400
 
-        username = str(data.get("username", "")).strip()
-        password = str(data.get("password", ""))
+        username = str(
+            data.get("username", "")
+        ).strip()
+
+        password = str(
+            data.get("password", "")
+        )
 
         if not username or not password:
             return jsonify({
@@ -381,18 +410,24 @@ def signup():
         conn = get_db_connection()
 
         try:
+
             with conn.cursor() as cursor:
+
                 cursor.execute(
                     """
                     INSERT INTO users (username, password)
                     VALUES (%s, %s)
                     """,
-                    (username, password_hash)
+                    (
+                        username,
+                        password_hash
+                    )
                 )
 
             conn.commit()
 
         except psycopg2.errors.UniqueViolation:
+
             conn.rollback()
 
             return jsonify({
@@ -410,11 +445,17 @@ def signup():
         }), 201
 
     except Exception as error:
-      print("Backend error:", repr(error))
 
-    return jsonify({
-        "error": str(error)
-    }), 500
+        print(
+            "Backend error:",
+            repr(error)
+        )
+
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+
 # ==========================================
 # LOGIN
 # ==========================================
@@ -423,6 +464,7 @@ def signup():
 def login():
 
     try:
+
         data = request.get_json(silent=True)
 
         if not data:
@@ -430,8 +472,13 @@ def login():
                 "error": "Request data missing"
             }), 400
 
-        username = str(data.get("username", "")).strip()
-        password = str(data.get("password", ""))
+        username = str(
+            data.get("username", "")
+        ).strip()
+
+        password = str(
+            data.get("password", "")
+        )
 
         if not username or not password:
             return jsonify({
@@ -441,7 +488,9 @@ def login():
         conn = get_db_connection()
 
         try:
+
             with conn.cursor() as cursor:
+
                 cursor.execute(
                     """
                     SELECT username, password
@@ -457,13 +506,18 @@ def login():
             conn.close()
 
         if not user:
+
             return jsonify({
                 "error": "Invalid username or password"
             }), 401
 
         stored_username, stored_password = user
 
-        if not check_password_hash(stored_password, password):
+        if not check_password_hash(
+            stored_password,
+            password
+        ):
+
             return jsonify({
                 "error": "Invalid username or password"
             }), 401
@@ -476,11 +530,36 @@ def login():
         }), 200
 
     except Exception as error:
-        print("Login error:", error)
+
+        import traceback
+
+        print("========== LOGIN ERROR ==========")
+        print("ERROR:", repr(error))
+
+        traceback.print_exc()
+
+        print("=================================")
 
         return jsonify({
-            "error": "Internal server error"
+            "error": "Login error",
+            "details": str(error)
         }), 500
+
+
+# ==========================================
+# LOGOUT
+# ==========================================
+
+@app.route("/logout", methods=["POST"])
+def logout():
+
+    session.clear()
+
+    return jsonify({
+        "message": "Logged out successfully"
+    })
+
+
 # ==========================================
 # CURRENT USER
 # ==========================================
@@ -491,6 +570,7 @@ def me():
     username = session.get("username")
 
     if username:
+
         return jsonify({
             "logged_in": True,
             "username": username
@@ -498,7 +578,9 @@ def me():
 
     return jsonify({
         "logged_in": False
-    })   
+    })
+
+
 # ==========================================
 # HOME
 # ==========================================
@@ -522,6 +604,297 @@ def health():
     return jsonify({
         "status": "ok"
     })
+# =========================
+# REAL-TIME WEATHER
+# =========================
+
+def get_weather(city):
+    try:
+        # City name ko safely encode karo
+        city_encoded = urllib.parse.quote(city)
+
+        # City -> latitude/longitude
+        geo_url = (
+            "https://geocoding-api.open-meteo.com/v1/search"
+            f"?name={city_encoded}&count=1&language=en&format=json"
+        )
+
+        with urllib.request.urlopen(geo_url, timeout=10) as response:
+            geo_data = json.loads(response.read().decode("utf-8"))
+
+        if not geo_data.get("results"):
+            return f"Sorry, mujhe '{city}' naam ki city nahi mili."
+
+        location = geo_data["results"][0]
+
+        latitude = location["latitude"]
+        longitude = location["longitude"]
+        city_name = location["name"]
+        country = location.get("country", "")
+        timezone = location.get("timezone", "auto")
+
+        # Live weather
+        weather_url = (
+            "https://api.open-meteo.com/v1/forecast"
+            f"?latitude={latitude}"
+            f"&longitude={longitude}"
+            "&current=temperature_2m,relative_humidity_2m,"
+            "apparent_temperature,precipitation,weather_code,wind_speed_10m"
+            f"&timezone={urllib.parse.quote(timezone)}"
+        )
+
+        with urllib.request.urlopen(weather_url, timeout=10) as response:
+            weather_data = json.loads(response.read().decode("utf-8"))
+
+        current = weather_data.get("current", {})
+        units = weather_data.get("current_units", {})
+
+        temperature = current.get("temperature_2m")
+        feels_like = current.get("apparent_temperature")
+        humidity = current.get("relative_humidity_2m")
+        rain = current.get("precipitation")
+        wind = current.get("wind_speed_10m")
+        weather_code = current.get("weather_code")
+
+        # WMO weather codes
+        conditions = {
+            0: "Clear sky",
+            1: "Mainly clear",
+            2: "Partly cloudy",
+            3: "Overcast",
+            45: "Foggy",
+            48: "Foggy",
+            51: "Light drizzle",
+            53: "Drizzle",
+            55: "Heavy drizzle",
+            56: "Freezing drizzle",
+            57: "Heavy freezing drizzle",
+            61: "Light rain",
+            63: "Rain",
+            65: "Heavy rain",
+            66: "Freezing rain",
+            67: "Heavy freezing rain",
+            71: "Light snow",
+            73: "Snow",
+            75: "Heavy snow",
+            77: "Snow grains",
+            80: "Light rain showers",
+            81: "Rain showers",
+            82: "Heavy rain showers",
+            85: "Light snow showers",
+            86: "Heavy snow showers",
+            95: "Thunderstorm",
+            96: "Thunderstorm with hail",
+            99: "Heavy thunderstorm with hail"
+        }
+
+        condition = conditions.get(
+            weather_code,
+            "Unknown weather"
+        )
+
+        return (
+            f"🌤️ Weather in {city_name}, {country}\n\n"
+            f"🌡️ Temperature: {temperature}°C\n"
+            f"🤒 Feels like: {feels_like}°C\n"
+            f"☁️ Condition: {condition}\n"
+            f"💧 Humidity: {humidity}%\n"
+            f"🌧️ Precipitation: {rain} mm\n"
+            f"💨 Wind speed: {wind} km/h"
+        )
+
+    except Exception as e:
+        print("WEATHER ERROR:", repr(e))
+        return "Sorry, weather service abhi available nahi hai."
+# ==========================================
+# WEB SEARCH
+# ==========================================
+
+from bs4 import BeautifulSoup
+
+
+def web_search(query, max_results=5):
+
+    try:
+
+        search_url = (
+            "https://www.google.com/search?q="
+            + urllib.parse.quote(query)
+        )
+
+        req = urllib.request.Request(
+            search_url,
+            headers={
+                "User-Agent":
+                "Mozilla/5.0 "
+                "(Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 "
+                "(KHTML, like Gecko) "
+                "Chrome/120.0 Safari/537.36"
+            }
+        )
+
+        with urllib.request.urlopen(
+            req,
+            timeout=10
+        ) as response:
+
+            html = response.read().decode(
+                "utf-8",
+                errors="ignore"
+            )
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+        results = []
+
+        for result in soup.select("div.MjjYud"):
+
+            link = result.select_one("a")
+            title = result.select_one("h3")
+
+            if not link or not title:
+                continue
+
+            href = link.get("href")
+
+            if not href:
+                continue
+
+            title_text = title.get_text(
+                " ",
+                strip=True
+            )
+
+            snippet_element = result.select_one(
+                ".VwiC3b"
+            )
+
+            snippet = ""
+
+            if snippet_element:
+                snippet = snippet_element.get_text(
+                    " ",
+                    strip=True
+                )
+
+            if title_text:
+
+                results.append({
+                    "title": title_text,
+                    "url": href,
+                    "snippet": snippet
+                })
+
+            if len(results) >= max_results:
+                break
+
+        print(
+            "WEB SEARCH:",
+            query,
+            "RESULTS:",
+            len(results)
+        )
+
+        return results
+
+    except Exception as error:
+
+        print(
+            "WEB SEARCH ERROR:",
+            repr(error)
+        )
+
+        return []
+
+
+def format_web_results(results):
+
+    if not results:
+        return ""
+
+    lines = []
+
+    for index, result in enumerate(
+        results,
+        start=1
+    ):
+
+        lines.append(
+            f"{index}. "
+            f"{result['title']}\n"
+            f"URL: {result['url']}\n"
+            f"{result['snippet']}"
+        )
+
+    return "\n\n".join(lines)
+# ==========================================
+# GEMINI GENERATION HELPER
+# ==========================================
+
+def generate_ai_reply(prompt):
+
+    response = None
+    last_error = None
+
+    models_to_try = [
+        MODEL,
+        FALLBACK_MODEL
+    ]
+
+    for current_model in models_to_try:
+
+        for attempt in range(2):
+
+            try:
+
+                print(
+                    f"Trying Gemini model: "
+                    f"{current_model} "
+                    f"(attempt {attempt + 1})"
+                )
+
+                response = client.models.generate_content(
+                    model=current_model,
+                    contents=prompt
+                )
+
+                if response and response.text:
+                    return response.text.strip()
+
+            except Exception as error:
+
+                last_error = error
+
+                error_text = str(error)
+
+                print(
+                    f"Gemini error on "
+                    f"{current_model}: "
+                    f"{error_text}"
+                )
+
+                if (
+                    "503" in error_text
+                    or
+                    "UNAVAILABLE" in error_text
+                ):
+
+                    time.sleep(2)
+
+                    continue
+
+                raise
+
+    if last_error:
+        raise last_error
+
+    raise Exception(
+        "Gemini ne response nahi diya."
+    )
 
 
 # ==========================================
@@ -531,20 +904,21 @@ def health():
 @app.route("/chat", methods=["POST"])
 def chat():
 
-    
-
-
     username = session.get("username")
 
     if not username:
+
         return jsonify({
             "error": "Login required"
         }), 401
 
     user_memory = load_memory(username)
+
     try:
 
-        data = request.get_json(silent=True)
+        data = request.get_json(
+            silent=True
+        )
 
         if not data or "message" not in data:
 
@@ -561,36 +935,178 @@ def chat():
             return jsonify({
                 "error": "Message is empty"
             }), 400
+
         if len(message) > 5000:
-           return jsonify({
-               "error": "Message too long. Maximum 5000 characters allowed."
-           }), 400
+
+            return jsonify({
+                "error": "Message too long. Maximum 5000 characters allowed."
+            }), 400
+
         history_from_frontend = data.get(
             "history",
             []
         )
+        # ======================================
+        # REAL-TIME WEATHER DETECTION
+        # ======================================
 
+        weather_city = None
+
+        weather_patterns = [
+            # Jaipur ka weather batao
+            r"^(.+?)\s+(?:ka|ki|ke)\s+(?:weather|mausam)(?:\s+(?:batao|bata|kya hai|kaisa hai|kaisi hai))?[?.!]*$",
+
+            # Jaipur mein mausam kaisa hai
+            r"^(.+?)\s+(?:mein|me)\s+(?:weather|mausam)(?:\s+(?:batao|bata|kaisa hai|kaisi hai|kya hai))?[?.!]*$",
+
+            # weather in Jaipur / weather of Jaipur
+            r"^(?:weather|mausam)\s+(?:in|of)\s+(.+?)[?.!]*$",
+
+            # What is the weather in Jaipur
+            r"^(?:what(?:'s| is)?\s+)?(?:the\s+)?weather\s+(?:in|of)\s+(.+?)[?.!]*$",
+
+            # Jaipur temperature
+            r"^(?:temperature|temp)\s+(?:in|of|ka|ki|ke)?\s*(.+?)[?.!]*$",
+
+            # temperature of Jaipur
+            r"^(?:what is\s+)?(?:the\s+)?temperature\s+(?:in|of)\s+(.+?)[?.!]*$",
+        ]
+
+        for pattern in weather_patterns:
+
+            match = re.search(
+                pattern,
+                message.strip(),
+                re.IGNORECASE
+            )
+
+            if match:
+                weather_city = match.group(1).strip(
+                    " .?!,:'\""
+                )
+                break
+
+        if weather_city:
+
+            print(
+                "WEATHER REQUEST DETECTED:",
+                weather_city
+            )
+
+            weather_reply = get_weather(
+                weather_city
+            )
+
+            def weather_stream():
+
+                words = weather_reply.split(" ")
+
+                for i, word in enumerate(words):
+
+                    chunk = word
+
+                    if i < len(words) - 1:
+                        chunk += " "
+
+                    yield (
+                        "data: "
+                        +
+                        json_module.dumps({
+                            "type": "chunk",
+                            "text": chunk
+                        })
+                        +
+                        "\n\n"
+                    )
+
+                    time.sleep(0.015)
+
+                yield (
+                    "data: "
+                    +
+                    json_module.dumps({
+                        "type": "done"
+                    })
+                    +
+                    "\n\n"
+                )
+
+            return Response(
+                stream_with_context(
+                    weather_stream()
+                ),
+                mimetype="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "X-Accel-Buffering": "no",
+                    "Connection": "keep-alive"
+                }
+            )
         # ======================================
         # PERSONAL QUESTION
         # ======================================
 
-        direct_reply = personal_answer(message, user_memory)
+        direct_reply = personal_answer(
+            message,
+            user_memory
+        )
 
         if direct_reply:
 
-            
+            # Direct answers also stream
+            def direct_stream():
 
-            return jsonify({
-                "reply": direct_reply
-            })
+                # Small chunks for ChatGPT-like effect
+                words = direct_reply.split(" ")
 
+                for i, word in enumerate(words):
+
+                    chunk = word
+
+                    if i < len(words) - 1:
+                        chunk += " "
+
+                    yield (
+                        "data: "
+                        +
+                        json_module.dumps({
+                            "type": "chunk",
+                            "text": chunk
+                        })
+                        +
+                        "\n\n"
+                    )
+
+                    time.sleep(0.02)
+
+                yield (
+                    "data: "
+                    +
+                    json_module.dumps({
+                        "type": "done"
+                    })
+                    +
+                    "\n\n"
+                )
+
+            return Response(
+                stream_with_context(direct_stream()),
+                mimetype="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "X-Accel-Buffering": "no",
+                    "Connection": "keep-alive"
+                }
+            )
 
         # ======================================
         # MEMORY
         # ======================================
 
-        detect_memory(message, user_memory)
-
+        detect_memory(
+            message,
+            user_memory
+        )
 
         # ======================================
         # MEMORY TEXT
@@ -607,7 +1123,6 @@ def chat():
         memory_text = "\n".join(
             memory_lines
         )
-
 
         # ======================================
         # SYSTEM PROMPT
@@ -630,7 +1145,6 @@ User information:
 {memory_text}
 """
 
-
         # ======================================
         # CONVERSATION
         # ======================================
@@ -641,21 +1155,21 @@ User information:
 
         for msg in previous_messages:
 
-          role = msg.get("role")
-          content = msg.get("content")
+            role = msg.get("role")
+            content = msg.get("content")
 
-          if role in ["user", "assistant"] and content:
+            if (
+                role in ["user", "assistant"]
+                and content
+            ):
 
-             conversation_messages.append(
-            f"{role}: {content}"
-        )
+                conversation_messages.append(
+                    f"{role}: {content}"
+                )
 
-
-        
         conversation_text = "\n".join(
             conversation_messages
         )
-
 
         # ======================================
         # GEMINI PROMPT
@@ -670,17 +1184,19 @@ Conversation:
 user: {message}
 """
 
-
         # ======================================
-        # GEMINI REQUEST
+        # GENERATE COMPLETE RESPONSE
         # ======================================
+        #
+        # IMPORTANT:
+        # Gemini normal generate_content()
+        # returns the response after generation.
+        #
+        # We then stream the completed text
+        # to the browser in small chunks.
+        #
 
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=prompt
-        )
-
-        reply = (response.text or "").strip()
+        reply = generate_ai_reply(prompt)
 
         if not reply:
 
@@ -688,32 +1204,72 @@ user: {message}
                 "AI ne empty response diya."
             )
 
-
-        
-
-
         # ======================================
-        # RESPONSE
+        # STREAM RESPONSE
         # ======================================
+
+        def generate_stream():
+
+            # Send chunks by words
+            words = reply.split(" ")
+
+            for i, word in enumerate(words):
+
+                chunk = word
+
+                if i < len(words) - 1:
+                    chunk += " "
+
+                yield (
+                    "data: "
+                    +
+                    json_module.dumps({
+                        "type": "chunk",
+                        "text": chunk
+                    })
+                    +
+                    "\n\n"
+                )
+
+                # Small delay for visible streaming
+                time.sleep(0.015)
+
+            yield (
+                "data: "
+                +
+                json_module.dumps({
+                    "type": "done"
+                })
+                +
+                "\n\n"
+            )
+
+        return Response(
+            stream_with_context(generate_stream()),
+            mimetype="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive"
+            }
+        )
+
+    except Exception as chat_error:
+
+        import traceback
+
+        print("========== CHAT ERROR ==========")
+        print("ERROR:", repr(chat_error))
+
+        traceback.print_exc()
+
+        print("================================")
 
         return jsonify({
-            "reply": reply
-        })
+            "error": "Internal server error",
+            "details": str(chat_error)
+        }), 500
 
-
-    except Exception as error:
-
-      import traceback
-
-    print("========== CHAT ERROR ==========")
-    print("ERROR:", repr(error))
-    traceback.print_exc()
-    print("================================")
-
-    return jsonify({
-        "error": "Internal server error",
-        "details": str(error)
-    }), 500
 
 # ==========================================
 # HISTORY
@@ -725,6 +1281,7 @@ def history():
     username = session.get("username")
 
     if not username:
+
         return jsonify({
             "error": "Login required"
         }), 401
@@ -737,16 +1294,18 @@ def history():
 
     except Exception as error:
 
-      import traceback
+        import traceback
 
-    print("========== HISTORY ERROR ==========")
-    print("ERROR:", repr(error))
-    traceback.print_exc()
-    print("===================================")
+        print("========== HISTORY ERROR ==========")
+        print("ERROR:", repr(error))
 
-    return jsonify({
-        "error": str(error)
-    }), 500
+        traceback.print_exc()
+
+        print("===================================")
+
+        return jsonify({
+            "error": str(error)
+        }), 500
 
 
 # ==========================================
@@ -756,25 +1315,31 @@ def history():
 @app.route("/new-chat", methods=["POST"])
 def new_chat():
 
-
     username = session.get("username")
 
     if not username:
-       return jsonify({
-        "error": "Login required"
-    }), 401
+
+        return jsonify({
+            "error": "Login required"
+        }), 401
+
     try:
 
-        data = request.get_json(silent=True) or {}
+        data = request.get_json(
+            silent=True
+        ) or {}
 
-        history = data.get("history", [])
+        history_data = data.get(
+            "history",
+            []
+        )
 
-        if history:
-          add_chat(
-        history,
-        username
-    )
-        
+        if history_data:
+
+            add_chat(
+                history_data,
+                username
+            )
 
         return jsonify({
             "message": "New chat started"
@@ -782,8 +1347,14 @@ def new_chat():
 
     except Exception as error:
 
+        print(
+            "New chat error:",
+            repr(error)
+        )
+
         return jsonify({
-            "error": "Internal server error"
+            "error": "Internal server error",
+            "details": str(error)
         }), 500
 
 
@@ -796,18 +1367,21 @@ def new_chat():
     methods=["DELETE"]
 )
 def delete_history(index):
+
     username = session.get("username")
 
     if not username:
+
         return jsonify({
-        "error": "Login required"
-    }), 401
+            "error": "Login required"
+        }), 401
+
     try:
 
         success = delete_chat(
-    index,
-    username
-)
+            index,
+            username
+        )
 
         if not success:
 
@@ -820,6 +1394,11 @@ def delete_history(index):
         })
 
     except Exception as error:
+
+        print(
+            "Delete history error:",
+            repr(error)
+        )
 
         return jsonify({
             "error": "Internal server error"
@@ -839,6 +1418,7 @@ def rename_history(index):
     username = session.get("username")
 
     if not username:
+
         return jsonify({
             "error": "Login required"
         }), 401
@@ -858,7 +1438,6 @@ def rename_history(index):
         title = data.get("name")
 
         if title is None:
-
             title = data.get("title")
 
         if title is None:
@@ -880,10 +1459,10 @@ def rename_history(index):
         title = title[:40]
 
         success = rename_chat(
-    index,
-    title,
-    username
-)
+            index,
+            title,
+            username
+        )
 
         if not success:
 
@@ -900,7 +1479,7 @@ def rename_history(index):
 
         print(
             "Rename error:",
-            error
+            repr(error)
         )
 
         return jsonify({
@@ -909,12 +1488,73 @@ def rename_history(index):
 
 
 # ==========================================
+# DATABASE STARTUP
+# ==========================================
+
+_db_initialized = False
+_db_init_lock = threading.Lock()
+
+
+@app.before_request
+def ensure_database():
+
+    global _db_initialized
+
+    if (
+        request.path == "/"
+        or
+        request.path.startswith("/static/")
+    ):
+
+        return None
+
+    if _db_initialized:
+        return None
+
+    with _db_init_lock:
+
+        if _db_initialized:
+            return None
+
+        try:
+
+            init_db()
+
+            _db_initialized = True
+
+            print(
+                "PostgreSQL database initialized successfully."
+            )
+
+        except Exception as error:
+
+            print(
+                "========== DATABASE INIT ERROR =========="
+            )
+
+            print(
+                "ERROR:",
+                repr(error)
+            )
+
+            print(
+                "========================================="
+            )
+
+            return jsonify({
+                "error": "Database connection failed",
+                "details": str(error)
+            }), 500
+
+    return None
+
+
+# ==========================================
 # START
 # ==========================================
 
-init_db()
-
 if __name__ == "__main__":
+
     port = int(
         os.environ.get(
             "PORT",
@@ -925,5 +1565,6 @@ if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=port,
-        debug=False
+        debug=False,
+        threaded=True
     )

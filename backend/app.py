@@ -2,19 +2,39 @@ import urllib.parse
 import urllib.request
 import psycopg2
 import json
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, request, jsonify, send_from_directory, session, Response, stream_with_context
-
-from google import genai
 import re
 import os
 import threading
 import time
-import queue
 import json as json_module
 
-from chat_history import add_chat, load_history, delete_chat, rename_chat
-from memory import load_memory, update_memory
+from werkzeug.security import generate_password_hash, check_password_hash
+
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    send_from_directory,
+    session,
+    Response,
+    stream_with_context
+)
+
+from google import genai
+
+from chat_history import (
+    add_chat,
+    load_history,
+    delete_chat,
+    rename_chat
+)
+
+from memory import (
+    load_memory,
+    update_memory
+)
+
+from bs4 import BeautifulSoup
 
 
 # ==========================================
@@ -29,36 +49,65 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 
 def load_users():
+
     if not os.path.exists(USERS_FILE):
         return []
 
     try:
-        with open(USERS_FILE, "r", encoding="utf-8") as file:
+
+        with open(
+            USERS_FILE,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
             return json.load(file)
+
     except Exception:
+
         return []
 
 
 def save_users(users):
-    with open(USERS_FILE, "w", encoding="utf-8") as file:
-        json.dump(users, file, indent=4, ensure_ascii=False)
+
+    with open(
+        USERS_FILE,
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        json.dump(
+            users,
+            file,
+            indent=4,
+            ensure_ascii=False
+        )
 
 
 # ==========================================
 # APP
 # ==========================================
 
-SECRET_KEY = os.environ.get("FLASK_SECRET_KEY")
+SECRET_KEY = os.environ.get(
+    "FLASK_SECRET_KEY"
+)
 
 if not SECRET_KEY:
-    raise RuntimeError("FLASK_SECRET_KEY is not set")
+
+    raise RuntimeError(
+        "FLASK_SECRET_KEY is not set"
+    )
+
 
 app = Flask(__name__)
+
 app.secret_key = SECRET_KEY
 
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = os.environ.get("RENDER") == "true"
+app.config["SESSION_COOKIE_SECURE"] = (
+    os.environ.get("RENDER") == "true"
+)
 
 
 # ==========================================
@@ -66,12 +115,20 @@ app.config["SESSION_COOKIE_SECURE"] = os.environ.get("RENDER") == "true"
 # ==========================================
 
 def get_db_connection():
-    database_url = os.environ.get("DATABASE_URL")
+
+    database_url = os.environ.get(
+        "DATABASE_URL"
+    )
 
     if not database_url:
-        raise RuntimeError("DATABASE_URL is not set")
 
-    return psycopg2.connect(database_url)
+        raise RuntimeError(
+            "DATABASE_URL is not set"
+        )
+
+    return psycopg2.connect(
+        database_url
+    )
 
 
 def init_db():
@@ -112,6 +169,7 @@ def init_db():
         conn.commit()
 
     finally:
+
         conn.close()
 
 
@@ -120,6 +178,7 @@ def init_db():
 # ==========================================
 
 MODEL = "gemini-3.6-flash"
+
 FALLBACK_MODEL = "gemini-2.5-flash-lite"
 
 client = genai.Client()
@@ -140,19 +199,29 @@ def clean_value(value):
         flags=re.IGNORECASE
     )
 
-    value = value.rstrip(".,!?").strip()
+    value = value.rstrip(
+        ".,!?"
+    ).strip()
 
     return value
 
 
-def save_memory(key, value, user_memory):
+def save_memory(
+    key,
+    value,
+    user_memory
+):
 
-    username = session.get("username")
+    username = session.get(
+        "username"
+    )
 
     if not username:
         return
 
-    value = clean_value(value)
+    value = clean_value(
+        value
+    )
 
     if not value:
         return
@@ -165,14 +234,19 @@ def save_memory(key, value, user_memory):
 
     user_memory[key] = value
 
-    print(f"Memory saved: {key} = {value}")
+    print(
+        f"Memory saved: {key} = {value}"
+    )
 
 
 # ==========================================
 # AUTOMATIC MEMORY DETECTION
 # ==========================================
 
-def detect_memory(message, user_memory):
+def detect_memory(
+    message,
+    user_memory
+):
 
     text = message.strip()
 
@@ -236,7 +310,7 @@ def detect_memory(message, user_memory):
         (
             r"^my goal is\s+(.+?)[.!?]?$",
             "goal"
-        ),
+        )
     ]
 
     for pattern, key in patterns:
@@ -250,7 +324,9 @@ def detect_memory(message, user_memory):
         if not match:
             continue
 
-        value = clean_value(match.group(1))
+        value = clean_value(
+            match.group(1)
+        )
 
         if not value:
             return
@@ -278,7 +354,10 @@ def detect_memory(message, user_memory):
 # PERSONAL QUESTIONS
 # ==========================================
 
-def personal_answer(message, user_memory):
+def personal_answer(
+    message,
+    user_memory
+):
 
     text = message.lower().strip()
 
@@ -289,79 +368,140 @@ def personal_answer(message, user_memory):
     )
 
     # AI NAME
-    if any(x in text for x in [
-        "tumhara naam kya hai",
-        "tumhare naam kya hai",
-        "aapka naam kya hai",
-        "aapke naam kya hai"
-    ]):
 
-        return "Mera naam Normal Chat hai."
+    if any(
+        x in text
+        for x in [
+            "tumhara naam kya hai",
+            "tumhare naam kya hai",
+            "aapka naam kya hai",
+            "aapke naam kya hai"
+        ]
+    ):
+
+        return (
+            "Mera naam Normal Chat hai."
+        )
 
     # USER NAME
-    if any(x in text for x in [
-        "mera naam kya hai",
-        "my name kya hai",
-        "what is my name"
-    ]):
+
+    if any(
+        x in text
+        for x in [
+            "mera naam kya hai",
+            "my name kya hai",
+            "what is my name"
+        ]
+    ):
 
         if "name" in user_memory:
-            return f"Tumhara naam {user_memory['name']} hai."
 
-        return "Mujhe abhi tumhara naam nahi pata."
+            return (
+                f"Tumhara naam "
+                f"{user_memory['name']} hai."
+            )
+
+        return (
+            "Mujhe abhi tumhara naam nahi pata."
+        )
 
     # FAVORITE GAME
+
     if "mera favorite game kya hai" in text:
 
         if "favorite game" in user_memory:
-            return f"Tumhara favorite game {user_memory['favorite game']} hai."
 
-        return "Mujhe abhi tumhara favorite game nahi pata."
+            return (
+                f"Tumhara favorite game "
+                f"{user_memory['favorite game']} hai."
+            )
+
+        return (
+            "Mujhe abhi tumhara favorite game nahi pata."
+        )
 
     # FAVORITE COLOR
+
     if "mera favorite color kya hai" in text:
 
         if "favorite color" in user_memory:
-            return f"Tumhara favorite color {user_memory['favorite color']} hai."
 
-        return "Mujhe abhi tumhara favorite color nahi pata."
+            return (
+                f"Tumhara favorite color "
+                f"{user_memory['favorite color']} hai."
+            )
+
+        return (
+            "Mujhe abhi tumhara favorite color nahi pata."
+        )
 
     # FAVORITE
+
     if "mera favorite kya hai" in text:
 
         if "favorite" in user_memory:
-            return f"Tumhe {user_memory['favorite']} pasand hai."
 
-        return "Mujhe abhi tumhara favorite nahi pata."
+            return (
+                f"Tumhe "
+                f"{user_memory['favorite']} pasand hai."
+            )
+
+        return (
+            "Mujhe abhi tumhara favorite nahi pata."
+        )
 
     # COLLEGE
-    if any(x in text for x in [
-        "mera college kya hai",
-        "mera college ka kya naam hai",
-        "mere college ka kya naam hai",
-        "what is my college"
-    ]):
+
+    if any(
+        x in text
+        for x in [
+            "mera college kya hai",
+            "mera college ka kya naam hai",
+            "mere college ka kya naam hai",
+            "what is my college"
+        ]
+    ):
 
         if "college" in user_memory:
-            return f"Tumhara college {user_memory['college']} hai."
 
-        return "Mujhe abhi tumhara college nahi pata."
+            return (
+                f"Tumhara college "
+                f"{user_memory['college']} hai."
+            )
+
+        return (
+            "Mujhe abhi tumhara college nahi pata."
+        )
 
     # GOAL
+
     if "mera goal kya hai" in text:
 
         if "goal" in user_memory:
-            return f"Tumhara goal {user_memory['goal']} hai."
 
-        return "Mujhe abhi tumhara goal nahi pata."
+            return (
+                f"Tumhara goal "
+                f"{user_memory['goal']} hai."
+            )
+
+        return (
+            "Mujhe abhi tumhara goal nahi pata."
+        )
 
     # CITY
+
     if "meri city kya hai" in text:
 
         if "city" in user_memory:
-            return f"Tumhari city {user_memory['city']} hai."
 
-        return "Mujhe abhi tumhari city nahi pata."
+            return (
+                f"Tumhari city "
+                f"{user_memory['city']} hai."
+            )
+
+        return (
+            "Mujhe abhi tumhari city nahi pata."
+        )
 
     return None
 
@@ -370,42 +510,62 @@ def personal_answer(message, user_memory):
 # SIGNUP
 # ==========================================
 
-@app.route("/signup", methods=["POST"])
+@app.route(
+    "/signup",
+    methods=["POST"]
+)
 def signup():
 
     try:
 
-        data = request.get_json(silent=True)
+        data = request.get_json(
+            silent=True
+        )
 
         if not data:
+
             return jsonify({
                 "error": "Request data missing"
             }), 400
 
         username = str(
-            data.get("username", "")
+            data.get(
+                "username",
+                ""
+            )
         ).strip()
 
         password = str(
-            data.get("password", "")
+            data.get(
+                "password",
+                ""
+            )
         )
 
         if not username or not password:
+
             return jsonify({
-                "error": "Username and password are required"
+                "error":
+                "Username and password are required"
             }), 400
 
         if len(username) < 3:
+
             return jsonify({
-                "error": "Username must be at least 3 characters"
+                "error":
+                "Username must be at least 3 characters"
             }), 400
 
         if len(password) < 8:
+
             return jsonify({
-                "error": "Password must be at least 8 characters"
+                "error":
+                "Password must be at least 8 characters"
             }), 400
 
-        password_hash = generate_password_hash(password)
+        password_hash = generate_password_hash(
+            password
+        )
 
         conn = get_db_connection()
 
@@ -415,7 +575,8 @@ def signup():
 
                 cursor.execute(
                     """
-                    INSERT INTO users (username, password)
+                    INSERT INTO users
+                    (username, password)
                     VALUES (%s, %s)
                     """,
                     (
@@ -431,17 +592,21 @@ def signup():
             conn.rollback()
 
             return jsonify({
-                "error": "Username already exists"
+                "error":
+                "Username already exists"
             }), 409
 
         finally:
+
             conn.close()
 
         session["username"] = username
 
         return jsonify({
-            "message": "Signup successful",
-            "username": username
+            "message":
+            "Signup successful",
+            "username":
+            username
         }), 201
 
     except Exception as error:
@@ -452,7 +617,8 @@ def signup():
         )
 
         return jsonify({
-            "error": str(error)
+            "error":
+            str(error)
         }), 500
 
 
@@ -460,29 +626,44 @@ def signup():
 # LOGIN
 # ==========================================
 
-@app.route("/login", methods=["POST"])
+@app.route(
+    "/login",
+    methods=["POST"]
+)
 def login():
 
     try:
 
-        data = request.get_json(silent=True)
+        data = request.get_json(
+            silent=True
+        )
 
         if not data:
+
             return jsonify({
-                "error": "Request data missing"
+                "error":
+                "Request data missing"
             }), 400
 
         username = str(
-            data.get("username", "")
+            data.get(
+                "username",
+                ""
+            )
         ).strip()
 
         password = str(
-            data.get("password", "")
+            data.get(
+                "password",
+                ""
+            )
         )
 
         if not username or not password:
+
             return jsonify({
-                "error": "Username and password are required"
+                "error":
+                "Username and password are required"
             }), 400
 
         conn = get_db_connection()
@@ -495,7 +676,8 @@ def login():
                     """
                     SELECT username, password
                     FROM users
-                    WHERE LOWER(username) = LOWER(%s)
+                    WHERE LOWER(username)
+                    = LOWER(%s)
                     """,
                     (username,)
                 )
@@ -503,12 +685,14 @@ def login():
                 user = cursor.fetchone()
 
         finally:
+
             conn.close()
 
         if not user:
 
             return jsonify({
-                "error": "Invalid username or password"
+                "error":
+                "Invalid username or password"
             }), 401
 
         stored_username, stored_password = user
@@ -519,30 +703,43 @@ def login():
         ):
 
             return jsonify({
-                "error": "Invalid username or password"
+                "error":
+                "Invalid username or password"
             }), 401
 
         session["username"] = stored_username
 
         return jsonify({
-            "message": "Login successful",
-            "username": stored_username
+            "message":
+            "Login successful",
+            "username":
+            stored_username
         }), 200
 
     except Exception as error:
 
         import traceback
 
-        print("========== LOGIN ERROR ==========")
-        print("ERROR:", repr(error))
+        print(
+            "========== LOGIN ERROR =========="
+        )
+
+        print(
+            "ERROR:",
+            repr(error)
+        )
 
         traceback.print_exc()
 
-        print("=================================")
+        print(
+            "================================="
+        )
 
         return jsonify({
-            "error": "Login error",
-            "details": str(error)
+            "error":
+            "Login error",
+            "details":
+            str(error)
         }), 500
 
 
@@ -550,13 +747,17 @@ def login():
 # LOGOUT
 # ==========================================
 
-@app.route("/logout", methods=["POST"])
+@app.route(
+    "/logout",
+    methods=["POST"]
+)
 def logout():
 
     session.clear()
 
     return jsonify({
-        "message": "Logged out successfully"
+        "message":
+        "Logged out successfully"
     })
 
 
@@ -564,20 +765,28 @@ def logout():
 # CURRENT USER
 # ==========================================
 
-@app.route("/me", methods=["GET"])
+@app.route(
+    "/me",
+    methods=["GET"]
+)
 def me():
 
-    username = session.get("username")
+    username = session.get(
+        "username"
+    )
 
     if username:
 
         return jsonify({
-            "logged_in": True,
-            "username": username
+            "logged_in":
+            True,
+            "username":
+            username
         })
 
     return jsonify({
-        "logged_in": False
+        "logged_in":
+        False
     })
 
 
@@ -589,7 +798,10 @@ def me():
 def home():
 
     return send_from_directory(
-        os.path.join(BASE_DIR, "frontend"),
+        os.path.join(
+            BASE_DIR,
+            "frontend"
+        ),
         "index.html"
     )
 
@@ -602,62 +814,134 @@ def home():
 def health():
 
     return jsonify({
-        "status": "ok"
+        "status":
+        "ok"
     })
-# =========================
+
+
+# ==========================================
 # REAL-TIME WEATHER
-# =========================
+# ==========================================
 
 def get_weather(city):
-    try:
-        # City name ko safely encode karo
-        city_encoded = urllib.parse.quote(city)
 
-        # City -> latitude/longitude
-        geo_url = (
-            "https://geocoding-api.open-meteo.com/v1/search"
-            f"?name={city_encoded}&count=1&language=en&format=json"
+    try:
+
+        city_encoded = urllib.parse.quote(
+            city
         )
 
-        with urllib.request.urlopen(geo_url, timeout=10) as response:
-            geo_data = json.loads(response.read().decode("utf-8"))
+        geo_url = (
+            "https://geocoding-api.open-meteo.com/v1/search"
+            f"?name={city_encoded}"
+            "&count=1"
+            "&language=en"
+            "&format=json"
+        )
 
-        if not geo_data.get("results"):
-            return f"Sorry, mujhe '{city}' naam ki city nahi mili."
+        with urllib.request.urlopen(
+            geo_url,
+            timeout=10
+        ) as response:
 
-        location = geo_data["results"][0]
+            geo_data = json.loads(
+                response.read().decode(
+                    "utf-8"
+                )
+            )
 
-        latitude = location["latitude"]
-        longitude = location["longitude"]
-        city_name = location["name"]
-        country = location.get("country", "")
-        timezone = location.get("timezone", "auto")
+        if not geo_data.get(
+            "results"
+        ):
 
-        # Live weather
+            return (
+                f"Sorry, mujhe '{city}' "
+                "naam ki city nahi mili."
+            )
+
+        location = geo_data[
+            "results"
+        ][0]
+
+        latitude = location[
+            "latitude"
+        ]
+
+        longitude = location[
+            "longitude"
+        ]
+
+        city_name = location[
+            "name"
+        ]
+
+        country = location.get(
+            "country",
+            ""
+        )
+
+        timezone = location.get(
+            "timezone",
+            "auto"
+        )
+
         weather_url = (
             "https://api.open-meteo.com/v1/forecast"
             f"?latitude={latitude}"
             f"&longitude={longitude}"
-            "&current=temperature_2m,relative_humidity_2m,"
-            "apparent_temperature,precipitation,weather_code,wind_speed_10m"
-            f"&timezone={urllib.parse.quote(timezone)}"
+            "&current="
+            "temperature_2m,"
+            "relative_humidity_2m,"
+            "apparent_temperature,"
+            "precipitation,"
+            "weather_code,"
+            "wind_speed_10m"
+            f"&timezone="
+            f"{urllib.parse.quote(timezone)}"
         )
 
-        with urllib.request.urlopen(weather_url, timeout=10) as response:
-            weather_data = json.loads(response.read().decode("utf-8"))
+        with urllib.request.urlopen(
+            weather_url,
+            timeout=10
+        ) as response:
 
-        current = weather_data.get("current", {})
-        units = weather_data.get("current_units", {})
+            weather_data = json.loads(
+                response.read().decode(
+                    "utf-8"
+                )
+            )
 
-        temperature = current.get("temperature_2m")
-        feels_like = current.get("apparent_temperature")
-        humidity = current.get("relative_humidity_2m")
-        rain = current.get("precipitation")
-        wind = current.get("wind_speed_10m")
-        weather_code = current.get("weather_code")
+        current = weather_data.get(
+            "current",
+            {}
+        )
 
-        # WMO weather codes
+        temperature = current.get(
+            "temperature_2m"
+        )
+
+        feels_like = current.get(
+            "apparent_temperature"
+        )
+
+        humidity = current.get(
+            "relative_humidity_2m"
+        )
+
+        rain = current.get(
+            "precipitation"
+        )
+
+        wind = current.get(
+            "wind_speed_10m"
+        )
+
+        weather_code = current.get(
+            "weather_code"
+        )
+
         conditions = {
+
             0: "Clear sky",
             1: "Mainly clear",
             2: "Partly cloudy",
@@ -694,24 +978,177 @@ def get_weather(city):
         )
 
         return (
-            f"🌤️ Weather in {city_name}, {country}\n\n"
-            f"🌡️ Temperature: {temperature}°C\n"
-            f"🤒 Feels like: {feels_like}°C\n"
-            f"☁️ Condition: {condition}\n"
-            f"💧 Humidity: {humidity}%\n"
-            f"🌧️ Precipitation: {rain} mm\n"
-            f"💨 Wind speed: {wind} km/h"
+            f"🌤️ Weather in "
+            f"{city_name}, {country}\n\n"
+            f"🌡️ Temperature: "
+            f"{temperature}°C\n"
+            f"🤒 Feels like: "
+            f"{feels_like}°C\n"
+            f"☁️ Condition: "
+            f"{condition}\n"
+            f"💧 Humidity: "
+            f"{humidity}%\n"
+            f"🌧️ Precipitation: "
+            f"{rain} mm\n"
+            f"💨 Wind speed: "
+            f"{wind} km/h"
         )
 
-    except Exception as e:
-        print("WEATHER ERROR:", repr(e))
-        return "Sorry, weather service abhi available nahi hai."
+    except Exception as error:
+
+        print(
+            "WEATHER ERROR:",
+            repr(error)
+        )
+
+        return (
+            "Sorry, weather service "
+            "abhi available nahi hai."
+        )
+
+
+# ==========================================
+# WEB SEARCH
+# ==========================================
+
+def web_search(
+    query,
+    max_results=5
+):
+
+    try:
+
+        search_url = (
+            "https://html.duckduckgo.com/html/?q="
+            + urllib.parse.quote(query)
+        )
+
+        req = urllib.request.Request(
+            search_url,
+            headers={
+                "User-Agent":
+                "Mozilla/5.0 "
+                "(Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 "
+                "(KHTML, like Gecko) "
+                "Chrome/120.0 Safari/537.36"
+            }
+        )
+
+        with urllib.request.urlopen(
+            req,
+            timeout=15
+        ) as response:
+
+            html = response.read().decode(
+                "utf-8",
+                errors="ignore"
+            )
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+        results = []
+
+        for result in soup.select(
+            ".result"
+        ):
+
+            title_element = result.select_one(
+                ".result__a"
+            )
+
+            snippet_element = result.select_one(
+                ".result__snippet"
+            )
+
+            if not title_element:
+                continue
+
+            title = title_element.get_text(
+                " ",
+                strip=True
+            )
+
+            url = title_element.get(
+                "href",
+                ""
+            )
+
+            snippet = ""
+
+            if snippet_element:
+
+                snippet = snippet_element.get_text(
+                    " ",
+                    strip=True
+                )
+
+            if not title or not url:
+                continue
+
+            results.append({
+                "title": title,
+                "url": url,
+                "snippet": snippet
+            })
+
+            if len(results) >= max_results:
+                break
+
+        print(
+            "WEB SEARCH:",
+            query,
+            "RESULTS:",
+            len(results)
+        )
+
+        return results
+
+    except Exception as error:
+
+        print(
+            "WEB SEARCH ERROR:",
+            repr(error)
+        )
+
+        return []
+
+
+def format_web_results(results):
+
+    if not results:
+        return ""
+
+    lines = []
+
+    for index, result in enumerate(
+        results,
+        start=1
+    ):
+
+        lines.append(
+            f"{index}. "
+            f"{result['title']}\n"
+            f"URL: {result['url']}\n"
+            f"{result['snippet']}"
+        )
+
+    return "\n\n".join(
+        lines
+    )
+
 
 # ==========================================
 # GEMINI GENERATION HELPER
 # ==========================================
 
-def generate_ai_reply(prompt):
+def generate_ai_reply(
+    prompt,
+    use_web_search=False
+):
 
     response = None
     last_error = None
@@ -739,7 +1176,19 @@ def generate_ai_reply(prompt):
                 )
 
                 if response and response.text:
+
+                    if use_web_search:
+
+                        print(
+                            "WEB RESULTS SENT "
+                            "TO GEMINI: SUCCESS"
+                        )
+
                     return response.text.strip()
+
+                raise Exception(
+                    "Gemini ne empty response diya."
+                )
 
             except Exception as error:
 
@@ -763,9 +1212,10 @@ def generate_ai_reply(prompt):
 
                     continue
 
-                raise
+                break
 
     if last_error:
+
         raise last_error
 
     raise Exception(
@@ -777,18 +1227,26 @@ def generate_ai_reply(prompt):
 # CHAT
 # ==========================================
 
-@app.route("/chat", methods=["POST"])
+@app.route(
+    "/chat",
+    methods=["POST"]
+)
 def chat():
 
-    username = session.get("username")
+    username = session.get(
+        "username"
+    )
 
     if not username:
 
         return jsonify({
-            "error": "Login required"
+            "error":
+            "Login required"
         }), 401
 
-    user_memory = load_memory(username)
+    user_memory = load_memory(
+        username
+    )
 
     try:
 
@@ -799,7 +1257,8 @@ def chat():
         if not data or "message" not in data:
 
             return jsonify({
-                "error": "Message is missing"
+                "error":
+                "Message is missing"
             }), 400
 
         message = str(
@@ -809,43 +1268,196 @@ def chat():
         if not message:
 
             return jsonify({
-                "error": "Message is empty"
+                "error":
+                "Message is empty"
             }), 400
 
         if len(message) > 5000:
 
             return jsonify({
-                "error": "Message too long. Maximum 5000 characters allowed."
+                "error":
+                "Message too long. "
+                "Maximum 5000 characters allowed."
             }), 400
 
         history_from_frontend = data.get(
             "history",
             []
         )
+
         # ======================================
-        # REAL-TIME WEATHER DETECTION
+        # WEB SEARCH DETECTION
+        # ======================================
+
+        web_search_needed = False
+
+        message_lower = message.lower()
+
+        search_triggers = [
+
+            # Time-sensitive
+            "latest",
+            "current",
+            "today",
+            "tonight",
+            "yesterday",
+            "tomorrow",
+            "recent",
+            "recently",
+            "right now",
+            "as of now",
+            "at the moment",
+
+            # News
+            "news",
+            "breaking news",
+            "what happened",
+            "what's happening",
+            "what is happening",
+            "happening now",
+
+            # Current status
+            "who is the current",
+            "who is currently",
+            "current pm",
+            "current president",
+            "current chief minister",
+            "current minister",
+            "current ceo",
+
+            # Prices
+            "current price",
+            "latest price",
+            "price today",
+            "stock price",
+            "share price",
+            "bitcoin price",
+            "crypto price",
+
+            # Updates
+            "latest update",
+            "latest updates",
+            "current update",
+            "new update",
+            "recent update",
+            "recent updates",
+
+            # Time periods
+            "this week",
+            "this month",
+            "this year",
+            "this weekend",
+
+            # Live
+            "live score",
+            "live news",
+            "live update",
+            "live updates"
+        ]
+
+        hindi_search_patterns = [
+
+            r"\babhi\s+(?:kya|ka|ki|ke|chal)\b",
+            r"\babhi\s+ka\s+news\b",
+            r"\baaj\s+(?:ka|ki|ke)\b",
+            r"\baaj\s+ki\s+news\b",
+            r"\baaj\s+ka\s+news\b",
+            r"\btaza\s+(?:khabar|news)\b",
+            r"\btaaza\s+(?:khabar|news)\b",
+            r"\bhaal\s+hi\s+mein\b",
+            r"\bfilhaal\b",
+            r"\bcurrently\b",
+            r"\biss\s+samay\b",
+            r"\bis\s+samay\b",
+            r"\babhi\s+ka\s+update\b",
+            r"\blatest\s+update\b"
+        ]
+
+        for pattern in hindi_search_patterns:
+
+            if re.search(
+                pattern,
+                message_lower,
+                re.IGNORECASE
+            ):
+
+                web_search_needed = True
+
+                break
+
+        if not web_search_needed:
+
+            for trigger in search_triggers:
+
+                if trigger in message_lower:
+
+                    web_search_needed = True
+
+                    break
+
+        web_context = ""
+
+        if web_search_needed:
+
+            print(
+                "WEB SEARCH REQUEST DETECTED:",
+                message
+            )
+
+            search_results = web_search(
+                message,
+                max_results=5
+            )
+
+            web_context = format_web_results(
+                search_results
+            )
+
+            if web_context:
+
+                print(
+                    "WEB SEARCH RESULTS FOUND:",
+                    len(search_results)
+                )
+
+            else:
+
+                print(
+                    "WEB SEARCH RETURNED NO RESULTS"
+                )
+
+        # ======================================
+        # WEATHER DETECTION
         # ======================================
 
         weather_city = None
 
         weather_patterns = [
-            # Jaipur ka weather batao
-            r"^(.+?)\s+(?:ka|ki|ke)\s+(?:weather|mausam)(?:\s+(?:batao|bata|kya hai|kaisa hai|kaisi hai))?[?.!]*$",
 
-            # Jaipur mein mausam kaisa hai
-            r"^(.+?)\s+(?:mein|me)\s+(?:weather|mausam)(?:\s+(?:batao|bata|kaisa hai|kaisi hai|kya hai))?[?.!]*$",
+            r"^(.+?)\s+(?:ka|ki|ke)\s+"
+            r"(?:weather|mausam)"
+            r"(?:\s+(?:batao|bata|kya hai|"
+            r"kaisa hai|kaisi hai))?[?.!]*$",
 
-            # weather in Jaipur / weather of Jaipur
-            r"^(?:weather|mausam)\s+(?:in|of)\s+(.+?)[?.!]*$",
+            r"^(.+?)\s+(?:mein|me)\s+"
+            r"(?:weather|mausam)"
+            r"(?:\s+(?:batao|bata|kaisa hai|"
+            r"kaisi hai|kya hai))?[?.!]*$",
 
-            # What is the weather in Jaipur
-            r"^(?:what(?:'s| is)?\s+)?(?:the\s+)?weather\s+(?:in|of)\s+(.+?)[?.!]*$",
+            r"^(?:weather|mausam)\s+"
+            r"(?:in|of)\s+(.+?)[?.!]*$",
 
-            # Jaipur temperature
-            r"^(?:temperature|temp)\s+(?:in|of|ka|ki|ke)?\s*(.+?)[?.!]*$",
+            r"^(?:what(?:'s| is)?\s+)?"
+            r"(?:the\s+)?weather\s+"
+            r"(?:in|of)\s+(.+?)[?.!]*$",
 
-            # temperature of Jaipur
-            r"^(?:what is\s+)?(?:the\s+)?temperature\s+(?:in|of)\s+(.+?)[?.!]*$",
+            r"^(?:temperature|temp)\s+"
+            r"(?:in|of|ka|ki|ke)?\s*"
+            r"(.+?)[?.!]*$",
+
+            r"^(?:what is\s+)?"
+            r"(?:the\s+)?temperature\s+"
+            r"(?:in|of)\s+(.+?)[?.!]*$"
         ]
 
         for pattern in weather_patterns:
@@ -857,9 +1469,13 @@ def chat():
             )
 
             if match:
-                weather_city = match.group(1).strip(
+
+                weather_city = match.group(
+                    1
+                ).strip(
                     " .?!,:'\""
                 )
+
                 break
 
         if weather_city:
@@ -875,33 +1491,43 @@ def chat():
 
             def weather_stream():
 
-                words = weather_reply.split(" ")
+                words = weather_reply.split(
+                    " "
+                )
 
-                for i, word in enumerate(words):
+                for i, word in enumerate(
+                    words
+                ):
 
                     chunk = word
 
                     if i < len(words) - 1:
+
                         chunk += " "
 
                     yield (
                         "data: "
                         +
                         json_module.dumps({
-                            "type": "chunk",
-                            "text": chunk
+                            "type":
+                            "chunk",
+                            "text":
+                            chunk
                         })
                         +
                         "\n\n"
                     )
 
-                    time.sleep(0.015)
+                    time.sleep(
+                        0.015
+                    )
 
                 yield (
                     "data: "
                     +
                     json_module.dumps({
-                        "type": "done"
+                        "type":
+                        "done"
                     })
                     +
                     "\n\n"
@@ -913,11 +1539,15 @@ def chat():
                 ),
                 mimetype="text/event-stream",
                 headers={
-                    "Cache-Control": "no-cache",
-                    "X-Accel-Buffering": "no",
-                    "Connection": "keep-alive"
+                    "Cache-Control":
+                    "no-cache",
+                    "X-Accel-Buffering":
+                    "no",
+                    "Connection":
+                    "keep-alive"
                 }
             )
+
         # ======================================
         # PERSONAL QUESTION
         # ======================================
@@ -929,49 +1559,62 @@ def chat():
 
         if direct_reply:
 
-            # Direct answers also stream
             def direct_stream():
 
-                # Small chunks for ChatGPT-like effect
-                words = direct_reply.split(" ")
+                words = direct_reply.split(
+                    " "
+                )
 
-                for i, word in enumerate(words):
+                for i, word in enumerate(
+                    words
+                ):
 
                     chunk = word
 
                     if i < len(words) - 1:
+
                         chunk += " "
 
                     yield (
                         "data: "
                         +
                         json_module.dumps({
-                            "type": "chunk",
-                            "text": chunk
+                            "type":
+                            "chunk",
+                            "text":
+                            chunk
                         })
                         +
                         "\n\n"
                     )
 
-                    time.sleep(0.02)
+                    time.sleep(
+                        0.02
+                    )
 
                 yield (
                     "data: "
                     +
                     json_module.dumps({
-                        "type": "done"
+                        "type":
+                        "done"
                     })
                     +
                     "\n\n"
                 )
 
             return Response(
-                stream_with_context(direct_stream()),
+                stream_with_context(
+                    direct_stream()
+                ),
                 mimetype="text/event-stream",
                 headers={
-                    "Cache-Control": "no-cache",
-                    "X-Accel-Buffering": "no",
-                    "Connection": "keep-alive"
+                    "Cache-Control":
+                    "no-cache",
+                    "X-Accel-Buffering":
+                    "no",
+                    "Connection":
+                    "keep-alive"
                 }
             )
 
@@ -1027,15 +1670,25 @@ User information:
 
         conversation_messages = []
 
-        previous_messages = history_from_frontend[-7:-1]
+        previous_messages = (
+            history_from_frontend[-7:-1]
+        )
 
         for msg in previous_messages:
 
-            role = msg.get("role")
-            content = msg.get("content")
+            role = msg.get(
+                "role"
+            )
+
+            content = msg.get(
+                "content"
+            )
 
             if (
-                role in ["user", "assistant"]
+                role in [
+                    "user",
+                    "assistant"
+                ]
                 and content
             ):
 
@@ -1054,6 +1707,18 @@ User information:
         prompt = f"""
 {system_prompt}
 
+If web search results are provided below:
+
+- Use them when relevant.
+- Prefer them for current or recent facts.
+- Do not invent facts.
+- Do not dump raw search results.
+- Answer naturally and directly.
+- Do not mention that you used DuckDuckGo.
+
+Web Search Results:
+{web_context}
+
 Conversation:
 {conversation_text}
 
@@ -1061,18 +1726,13 @@ user: {message}
 """
 
         # ======================================
-        # GENERATE COMPLETE RESPONSE
+        # GENERATE RESPONSE
         # ======================================
-        #
-        # IMPORTANT:
-        # Gemini normal generate_content()
-        # returns the response after generation.
-        #
-        # We then stream the completed text
-        # to the browser in small chunks.
-        #
 
-        reply = generate_ai_reply(prompt)
+        reply = generate_ai_reply(
+            prompt,
+            use_web_search=web_search_needed
+        )
 
         if not reply:
 
@@ -1086,47 +1746,60 @@ user: {message}
 
         def generate_stream():
 
-            # Send chunks by words
-            words = reply.split(" ")
+            words = reply.split(
+                " "
+            )
 
-            for i, word in enumerate(words):
+            for i, word in enumerate(
+                words
+            ):
 
                 chunk = word
 
                 if i < len(words) - 1:
+
                     chunk += " "
 
                 yield (
                     "data: "
                     +
                     json_module.dumps({
-                        "type": "chunk",
-                        "text": chunk
+                        "type":
+                        "chunk",
+                        "text":
+                        chunk
                     })
                     +
                     "\n\n"
                 )
 
-                # Small delay for visible streaming
-                time.sleep(0.015)
+                time.sleep(
+                    0.015
+                )
 
             yield (
                 "data: "
                 +
                 json_module.dumps({
-                    "type": "done"
+                    "type":
+                    "done"
                 })
                 +
                 "\n\n"
             )
 
         return Response(
-            stream_with_context(generate_stream()),
+            stream_with_context(
+                generate_stream()
+            ),
             mimetype="text/event-stream",
             headers={
-                "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no",
-                "Connection": "keep-alive"
+                "Cache-Control":
+                "no-cache",
+                "X-Accel-Buffering":
+                "no",
+                "Connection":
+                "keep-alive"
             }
         )
 
@@ -1134,16 +1807,26 @@ user: {message}
 
         import traceback
 
-        print("========== CHAT ERROR ==========")
-        print("ERROR:", repr(chat_error))
+        print(
+            "========== CHAT ERROR =========="
+        )
+
+        print(
+            "ERROR:",
+            repr(chat_error)
+        )
 
         traceback.print_exc()
 
-        print("================================")
+        print(
+            "================================"
+        )
 
         return jsonify({
-            "error": "Internal server error",
-            "details": str(chat_error)
+            "error":
+            "Internal server error",
+            "details":
+            str(chat_error)
         }), 500
 
 
@@ -1151,36 +1834,52 @@ user: {message}
 # HISTORY
 # ==========================================
 
-@app.route("/history", methods=["GET"])
+@app.route(
+    "/history",
+    methods=["GET"]
+)
 def history():
 
-    username = session.get("username")
+    username = session.get(
+        "username"
+    )
 
     if not username:
 
         return jsonify({
-            "error": "Login required"
+            "error":
+            "Login required"
         }), 401
 
     try:
 
         return jsonify({
-            "history": load_history(username)
+            "history":
+            load_history(username)
         })
 
     except Exception as error:
 
         import traceback
 
-        print("========== HISTORY ERROR ==========")
-        print("ERROR:", repr(error))
+        print(
+            "========== HISTORY ERROR =========="
+        )
+
+        print(
+            "ERROR:",
+            repr(error)
+        )
 
         traceback.print_exc()
 
-        print("===================================")
+        print(
+            "==================================="
+        )
 
         return jsonify({
-            "error": str(error)
+            "error":
+            str(error)
         }), 500
 
 
@@ -1188,15 +1887,21 @@ def history():
 # NEW CHAT
 # ==========================================
 
-@app.route("/new-chat", methods=["POST"])
+@app.route(
+    "/new-chat",
+    methods=["POST"]
+)
 def new_chat():
 
-    username = session.get("username")
+    username = session.get(
+        "username"
+    )
 
     if not username:
 
         return jsonify({
-            "error": "Login required"
+            "error":
+            "Login required"
         }), 401
 
     try:
@@ -1218,7 +1923,8 @@ def new_chat():
             )
 
         return jsonify({
-            "message": "New chat started"
+            "message":
+            "New chat started"
         })
 
     except Exception as error:
@@ -1229,8 +1935,10 @@ def new_chat():
         )
 
         return jsonify({
-            "error": "Internal server error",
-            "details": str(error)
+            "error":
+            "Internal server error",
+            "details":
+            str(error)
         }), 500
 
 
@@ -1244,12 +1952,15 @@ def new_chat():
 )
 def delete_history(index):
 
-    username = session.get("username")
+    username = session.get(
+        "username"
+    )
 
     if not username:
 
         return jsonify({
-            "error": "Login required"
+            "error":
+            "Login required"
         }), 401
 
     try:
@@ -1262,11 +1973,13 @@ def delete_history(index):
         if not success:
 
             return jsonify({
-                "error": "Chat not found"
+                "error":
+                "Chat not found"
             }), 404
 
         return jsonify({
-            "message": "Chat deleted"
+            "message":
+            "Chat deleted"
         })
 
     except Exception as error:
@@ -1277,7 +1990,8 @@ def delete_history(index):
         )
 
         return jsonify({
-            "error": "Internal server error"
+            "error":
+            "Internal server error"
         }), 500
 
 
@@ -1291,12 +2005,15 @@ def delete_history(index):
 )
 def rename_history(index):
 
-    username = session.get("username")
+    username = session.get(
+        "username"
+    )
 
     if not username:
 
         return jsonify({
-            "error": "Login required"
+            "error":
+            "Login required"
         }), 401
 
     try:
@@ -1308,18 +2025,25 @@ def rename_history(index):
         if not data:
 
             return jsonify({
-                "error": "Request data missing"
+                "error":
+                "Request data missing"
             }), 400
 
-        title = data.get("name")
+        title = data.get(
+            "name"
+        )
 
         if title is None:
-            title = data.get("title")
+
+            title = data.get(
+                "title"
+            )
 
         if title is None:
 
             return jsonify({
-                "error": "Name is missing"
+                "error":
+                "Name is missing"
             }), 400
 
         title = str(
@@ -1329,7 +2053,8 @@ def rename_history(index):
         if not title:
 
             return jsonify({
-                "error": "Name cannot be empty"
+                "error":
+                "Name cannot be empty"
             }), 400
 
         title = title[:40]
@@ -1343,12 +2068,15 @@ def rename_history(index):
         if not success:
 
             return jsonify({
-                "error": "Chat not found"
+                "error":
+                "Chat not found"
             }), 404
 
         return jsonify({
-            "message": "Chat renamed successfully",
-            "title": title
+            "message":
+            "Chat renamed successfully",
+            "title":
+            title
         })
 
     except Exception as error:
@@ -1359,7 +2087,8 @@ def rename_history(index):
         )
 
         return jsonify({
-            "error": "Internal server error"
+            "error":
+            "Internal server error"
         }), 500
 
 
@@ -1368,6 +2097,7 @@ def rename_history(index):
 # ==========================================
 
 _db_initialized = False
+
 _db_init_lock = threading.Lock()
 
 
@@ -1379,17 +2109,21 @@ def ensure_database():
     if (
         request.path == "/"
         or
-        request.path.startswith("/static/")
+        request.path.startswith(
+            "/static/"
+        )
     ):
 
         return None
 
     if _db_initialized:
+
         return None
 
     with _db_init_lock:
 
         if _db_initialized:
+
             return None
 
         try:
@@ -1418,8 +2152,10 @@ def ensure_database():
             )
 
             return jsonify({
-                "error": "Database connection failed",
-                "details": str(error)
+                "error":
+                "Database connection failed",
+                "details":
+                str(error)
             }), 500
 
     return None
