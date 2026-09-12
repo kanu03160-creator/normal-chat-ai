@@ -24,9 +24,9 @@
             color: #fff;
         }
 
-        /* ==========================================
+        /* =========================
            HEADER
-        ========================================== */
+        ========================= */
 
         .header {
             height: 72px;
@@ -46,7 +46,6 @@
             color: #fff;
             font-size: 24px;
             font-weight: 600;
-            letter-spacing: 0.2px;
         }
 
         .header-buttons {
@@ -86,10 +85,9 @@
             background: #fff;
         }
 
-
-        /* ==========================================
+        /* =========================
            CHAT BOX
-        ========================================== */
+        ========================= */
 
         .chat-box {
             height: calc(100vh - 144px);
@@ -119,10 +117,9 @@
             background: #444;
         }
 
-
-        /* ==========================================
+        /* =========================
            MESSAGE
-        ========================================== */
+        ========================= */
 
         .message {
             width: fit-content;
@@ -134,7 +131,7 @@
             font-size: 15px;
             word-wrap: break-word;
             overflow-wrap: anywhere;
-            white-space: normal;
+            white-space: pre-wrap;
         }
 
         .message b {
@@ -160,10 +157,9 @@
             border-bottom-left-radius: 5px;
         }
 
-
-        /* ==========================================
-           TYPING DOTS
-        ========================================== */
+        /* =========================
+           TYPING
+        ========================= */
 
         .typing-dots {
             display: inline-flex;
@@ -203,10 +199,9 @@
             }
         }
 
-
-        /* ==========================================
-           INPUT AREA
-        ========================================== */
+        /* =========================
+           INPUT
+        ========================= */
 
         .input-area {
             height: 72px;
@@ -230,7 +225,6 @@
             outline: none;
             background: #171717 !important;
             color: #fff !important;
-            transition: 0.2s ease;
         }
 
         #message::placeholder {
@@ -240,7 +234,6 @@
         #message:focus {
             border-color: #555;
             background: #1b1b1b !important;
-            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.03);
         }
 
         #sendButton {
@@ -254,15 +247,10 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: 0.2s ease;
         }
 
         #sendButton:hover {
             background: #fff;
-        }
-
-        #sendButton:active {
-            transform: scale(0.97);
         }
 
         #sendButton:disabled {
@@ -270,10 +258,9 @@
             cursor: not-allowed;
         }
 
-
-        /* ==========================================
+        /* =========================
            SIDEBAR
-        ========================================== */
+        ========================= */
 
         .sidebar {
             position: fixed;
@@ -297,29 +284,12 @@
             transform: translateX(0);
         }
 
-        .sidebar::-webkit-scrollbar {
-            width: 7px;
-        }
-
-        .sidebar::-webkit-scrollbar-track {
-            background: #111;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 10px;
-        }
-
         .sidebar-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 18px;
             font-size: 21px;
-        }
-
-        .sidebar-header b {
-            font-weight: 600;
         }
 
         #closeSidebar {
@@ -349,11 +319,6 @@
             margin-bottom: 12px;
             font-size: 15px;
             font-weight: 600;
-            transition: 0.2s ease;
-        }
-
-        .sidebar-new-chat:hover {
-            background: #fff;
         }
 
         #historySearch {
@@ -373,26 +338,15 @@
             color: #777;
         }
 
-        #historySearch:focus {
-            border-color: #555;
-        }
-
         #clearHistorySearch {
             width: 100%;
             height: 40px;
-            padding: 8px;
             border: 1px solid #333;
             border-radius: 9px;
             background: #1a1a1a;
             color: #bbb;
             cursor: pointer;
             margin-bottom: 15px;
-            font-size: 13px;
-        }
-
-        #clearHistorySearch:hover {
-            background: #262626;
-            color: #fff;
         }
 
         #sidebarHistory > p {
@@ -414,7 +368,6 @@
             background: #1a1a1a;
             color: #ddd;
             cursor: pointer;
-            transition: 0.2s ease;
         }
 
         .sidebar-chat:hover {
@@ -426,7 +379,6 @@
             background: #292929;
             border-color: #444;
             color: #fff;
-            font-weight: 600;
         }
 
         .sidebar-chat-title {
@@ -434,14 +386,11 @@
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
-            cursor: pointer;
-            font-size: 14px;
         }
 
         .sidebar-actions {
             display: flex;
             gap: 3px;
-            flex-shrink: 0;
         }
 
         .sidebar-rename,
@@ -452,8 +401,6 @@
             background: transparent;
             color: #999;
             cursor: pointer;
-            font-size: 15px;
-            padding: 4px;
             border-radius: 7px;
         }
 
@@ -463,10 +410,9 @@
             color: #fff;
         }
 
-
-        /* ==========================================
+        /* =========================
            LOGIN MODAL
-        ========================================== */
+        ========================= */
 
         .login-modal {
             display: none;
@@ -496,7 +442,6 @@
             color: #fff;
             margin: 0 0 25px;
             font-size: 23px;
-            font-weight: 600;
         }
 
         .login-box input {
@@ -512,36 +457,19 @@
             font-size: 15px;
         }
 
-        .login-box input::placeholder {
-            color: #777;
-        }
-
-        .login-box input:focus {
-            border-color: #666;
-            background: #242424;
-        }
-
         .auth-submit {
             width: 100%;
             height: 48px;
-            padding: 0;
             border: none;
             border-radius: 9px;
             background: #f1f1f1;
             color: #111;
             cursor: pointer;
-            font-size: 15px;
             font-weight: 600;
-            transition: 0.2s ease;
-        }
-
-        .auth-submit:hover {
-            background: #fff;
         }
 
         .auth-submit:disabled {
             opacity: 0.5;
-            cursor: not-allowed;
         }
 
         .close-login {
@@ -566,7 +494,6 @@
         .auth-switch {
             color: #888;
             font-size: 14px;
-            margin: 20px 0 0;
         }
 
         .auth-switch button {
@@ -575,69 +502,113 @@
             color: #fff;
             cursor: pointer;
             text-decoration: underline;
-            font-size: 14px;
-        }
-
-        .auth-switch button:hover {
-            color: #ccc;
         }
 
         #authMessage {
             min-height: 20px;
-            margin: 12px 0 0;
-            font-size: 14px;
             color: #bbb;
         }
 
+        /* =========================
+           SETTINGS MODAL
+        ========================= */
 
-        /* ==========================================
-           TABLET
-        ========================================== */
-
-        @media (min-width: 601px) and (max-width: 900px) {
-
-            .header {
-                padding: 0 14px;
-            }
-
-            .header h1 {
-                font-size: 21px;
-            }
-
-            .header button {
-                padding: 9px 11px;
-                font-size: 13px;
-            }
-
-            .chat-box {
-                padding: 18px;
-            }
-
-            .message {
-                max-width: 85%;
-            }
-
-            .sidebar {
-                width: 330px;
-            }
+        .settings-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.78);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            z-index: 9998;
         }
 
+        .settings-box {
+            width: 420px;
+            max-width: 100%;
+            background: #151515;
+            border: 1px solid #303030;
+            border-radius: 17px;
+            padding: 28px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+            position: relative;
+        }
 
-        /* ==========================================
+        .settings-box h2 {
+            margin: 0 0 25px;
+            font-size: 23px;
+        }
+
+        .settings-section {
+            background: #1c1c1c;
+            border: 1px solid #2d2d2d;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .settings-label {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .settings-username {
+            color: #fff;
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .logout-button {
+            width: 100%;
+            height: 46px;
+            border: 1px solid #444;
+            border-radius: 9px;
+            background: #242424;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .logout-button:hover {
+            background: #303030;
+        }
+
+        .close-settings {
+            position: absolute;
+            top: 11px;
+            right: 13px;
+            width: 34px;
+            height: 34px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #888;
+            font-size: 25px;
+            cursor: pointer;
+        }
+
+        .close-settings:hover {
+            background: #292929;
+            color: #fff;
+        }
+
+        /* =========================
            MOBILE
-        ========================================== */
+        ========================= */
 
         @media (max-width: 600px) {
 
             .header {
                 height: 64px;
                 padding: 0 9px;
-                gap: 6px;
             }
 
             .header h1 {
                 font-size: 19px;
-                white-space: nowrap;
             }
 
             .header-buttons {
@@ -645,9 +616,8 @@
             }
 
             .header button {
-                padding: 8px 8px;
+                padding: 8px;
                 font-size: 11px;
-                border-radius: 7px;
             }
 
             .chat-box {
@@ -658,27 +628,17 @@
             .message {
                 max-width: 92%;
                 padding: 10px 12px;
-                margin-bottom: 10px;
                 font-size: 14px;
-                line-height: 1.5;
-                border-radius: 11px;
-            }
-
-            .message b {
-                font-size: 12px;
             }
 
             .input-area {
                 height: 64px;
                 padding: 8px;
-                gap: 7px;
             }
 
             #message {
                 height: 48px;
-                padding: 0 11px;
                 font-size: 15px;
-                border-radius: 10px;
             }
 
             #sendButton {
@@ -686,75 +646,18 @@
                 min-width: 65px;
                 height: 48px;
                 font-size: 13px;
-                border-radius: 10px;
             }
 
             .sidebar {
                 width: 88vw;
                 max-width: 340px;
-                padding: 14px;
             }
 
-            .sidebar-header {
-                font-size: 20px;
-                margin-bottom: 14px;
-            }
-
-            .sidebar-new-chat {
-                padding: 12px;
-                font-size: 14px;
-            }
-
-            #historySearch {
-                height: 44px;
-                font-size: 14px;
-            }
-
-            #clearHistorySearch {
-                height: 38px;
-                font-size: 13px;
-            }
-
-            .sidebar-chat {
-                padding: 10px;
-                min-height: 48px;
-            }
-
-            .sidebar-chat-title {
-                font-size: 13px;
-            }
-
-            .sidebar-rename,
-            .sidebar-delete {
-                font-size: 14px;
-            }
-
-            .login-box {
+            .settings-box {
                 width: calc(100vw - 30px);
                 padding: 25px 18px;
-                border-radius: 14px;
-            }
-
-            .login-box h2 {
-                font-size: 21px;
-                margin-bottom: 20px;
-            }
-
-            .login-box input {
-                height: 46px;
-                font-size: 14px;
-            }
-
-            .auth-submit {
-                height: 46px;
-                font-size: 14px;
             }
         }
-
-
-        /* ==========================================
-           VERY SMALL PHONES
-        ========================================== */
 
         @media (max-width: 380px) {
 
@@ -762,60 +665,34 @@
                 font-size: 17px;
             }
 
-            .header-buttons {
-                gap: 3px;
-            }
-
             .header button {
                 padding: 7px 6px;
                 font-size: 10px;
             }
 
-            .message {
-                max-width: 95%;
-                font-size: 13px;
-            }
-
             #sendButton {
                 width: 58px;
                 min-width: 58px;
-                font-size: 12px;
             }
         }
     </style>
 </head>
 
-
 <body>
 
-    <!-- =========================
-         SIDEBAR
-    ========================= -->
+    <!-- SIDEBAR -->
 
     <div id="sidebar" class="sidebar">
 
         <div class="sidebar-header">
-
             <b>Chat History</b>
 
-            <button
-                id="closeSidebar"
-                type="button"
-            >
-                ✕
-            </button>
-
+            <button id="closeSidebar" type="button">✕</button>
         </div>
 
-
-        <button
-            id="sidebarNewChat"
-            class="sidebar-new-chat"
-            type="button"
-        >
+        <button id="sidebarNewChat" class="sidebar-new-chat" type="button">
             + New Chat
         </button>
-
 
         <input
             type="text"
@@ -824,23 +701,16 @@
             autocomplete="off"
         >
 
-
-        <button
-            id="clearHistorySearch"
-            type="button"
-        >
+        <button id="clearHistorySearch" type="button">
             ✕ Clear Search
         </button>
-
 
         <div id="sidebarHistory"></div>
 
     </div>
 
 
-    <!-- =========================
-         HEADER
-    ========================= -->
+    <!-- HEADER -->
 
     <div class="header">
 
@@ -848,24 +718,19 @@
 
         <div class="header-buttons">
 
-            <button
-                id="historyButton"
-                type="button"
-            >
+            <button id="historyButton" type="button">
                 History
             </button>
 
-            <button
-                id="newChatButton"
-                type="button"
-            >
+            <button id="newChatButton" type="button">
                 New Chat
             </button>
 
-            <button
-                id="loginButton"
-                type="button"
-            >
+            <button id="settingsButton" type="button">
+                ⚙️
+            </button>
+
+            <button id="loginButton" type="button">
                 Login
             </button>
 
@@ -874,19 +739,12 @@
     </div>
 
 
-    <!-- =========================
-         CHAT
-    ========================= -->
+    <!-- CHAT -->
 
-    <div
-        id="chatBox"
-        class="chat-box"
-    ></div>
+    <div id="chatBox" class="chat-box"></div>
 
 
-    <!-- =========================
-         INPUT
-    ========================= -->
+    <!-- INPUT -->
 
     <div class="input-area">
 
@@ -897,29 +755,20 @@
             autocomplete="off"
         >
 
-        <button
-            id="sendButton"
-            type="button"
-        >
+        <button id="sendButton" type="button">
             Send
         </button>
 
     </div>
 
 
-    <!-- =========================
-         LOGIN MODAL
-    ========================= -->
+    <!-- LOGIN MODAL -->
 
     <div id="loginModal" class="login-modal">
 
         <div class="login-box">
 
-            <button
-                id="closeLoginModal"
-                class="close-login"
-                type="button"
-            >
+            <button id="closeLoginModal" class="close-login" type="button">
                 ×
             </button>
 
@@ -939,11 +788,7 @@
                 autocomplete="current-password"
             >
 
-            <button
-                id="authSubmit"
-                class="auth-submit"
-                type="button"
-            >
+            <button id="authSubmit" class="auth-submit" type="button">
                 Login
             </button>
 
@@ -951,10 +796,7 @@
 
             <p class="auth-switch">
                 Don't have an account?
-                <button
-                    id="switchAuth"
-                    type="button"
-                >
+                <button id="switchAuth" type="button">
                     Create Account
                 </button>
             </p>
@@ -964,13 +806,70 @@
     </div>
 
 
+    <!-- SETTINGS MODAL -->
+
+    <div id="settingsModal" class="settings-modal">
+
+        <div class="settings-box">
+
+            <button
+                id="closeSettings"
+                class="close-settings"
+                type="button"
+            >
+                ×
+            </button>
+
+            <h2>Settings</h2>
+
+            <div class="settings-section">
+
+                <div class="settings-label">
+                    Logged in as
+                </div>
+
+                <div
+                    id="settingsUsername"
+                    class="settings-username"
+                >
+                    Not logged in
+                </div>
+
+            </div>
+
+            <div class="settings-section">
+
+                <div class="settings-label">
+                    Account
+                </div>
+
+                <button
+                    id="logoutButton"
+                    class="logout-button"
+                    type="button"
+                >
+                    Logout
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
     <script>
 
-        /* =================================
+        /* =========================
            CONFIG
-        ================================= */
+        ========================= */
 
         const API_URL = "";
+
+
+        /* =========================
+           AUTH ELEMENTS
+        ========================= */
 
         const loginButton =
             document.getElementById("loginButton");
@@ -1000,10 +899,34 @@
             document.getElementById("closeLoginModal");
 
 
+        /* =========================
+           SETTINGS ELEMENTS
+        ========================= */
+
+        const settingsButton =
+            document.getElementById("settingsButton");
+
+        const settingsModal =
+            document.getElementById("settingsModal");
+
+        const closeSettings =
+            document.getElementById("closeSettings");
+
+        const settingsUsername =
+            document.getElementById("settingsUsername");
+
+        const logoutButton =
+            document.getElementById("logoutButton");
+
+
         let isSignupMode = false;
 
         let loggedInUsername = null;
 
+
+        /* =========================
+           AUTH MODE
+        ========================= */
 
         function updateAuthMode() {
 
@@ -1047,9 +970,24 @@
         );
 
 
+        /* =========================
+           LOGIN MODAL
+        ========================= */
+
         loginButton.addEventListener(
             "click",
             () => {
+
+                if (loggedInUsername) {
+
+                    settingsUsername.textContent =
+                        loggedInUsername;
+
+                    settingsModal.style.display =
+                        "flex";
+
+                    return;
+                }
 
                 loginModal.style.display =
                     "flex";
@@ -1073,9 +1011,7 @@
             "click",
             (event) => {
 
-                if (
-                    event.target === loginModal
-                ) {
+                if (event.target === loginModal) {
 
                     loginModal.style.display =
                         "none";
@@ -1083,6 +1019,140 @@
             }
         );
 
+
+        /* =========================
+           SETTINGS
+        ========================= */
+
+        settingsButton.addEventListener(
+            "click",
+            () => {
+
+                if (!loggedInUsername) {
+
+                    loginModal.style.display =
+                        "flex";
+
+                    authUsername.focus();
+
+                    return;
+                }
+
+                settingsUsername.textContent =
+                    loggedInUsername;
+
+                settingsModal.style.display =
+                    "flex";
+            }
+        );
+
+
+        closeSettings.addEventListener(
+            "click",
+            () => {
+
+                settingsModal.style.display =
+                    "none";
+            }
+        );
+
+
+        settingsModal.addEventListener(
+            "click",
+            (event) => {
+
+                if (event.target === settingsModal) {
+
+                    settingsModal.style.display =
+                        "none";
+                }
+            }
+        );
+
+
+        /* =========================
+           LOGOUT
+        ========================= */
+
+        logoutButton.addEventListener(
+            "click",
+            async () => {
+
+                const confirmLogout =
+                    confirm("Kya aap logout karna chahte ho?");
+
+                if (!confirmLogout) {
+                    return;
+                }
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "/logout",
+                            {
+                                method: "POST",
+                                credentials: "include"
+                            }
+                        );
+
+                    const contentType =
+                        response.headers.get(
+                            "content-type"
+                        ) || "";
+
+                    const data =
+                        contentType.includes(
+                            "application/json"
+                        )
+                            ? await response.json()
+                            : {};
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            data.error ||
+                            "Logout failed"
+                        );
+                    }
+
+                    loggedInUsername = null;
+
+                    loginButton.textContent =
+                        "Login";
+
+                    settingsModal.style.display =
+                        "none";
+
+                    conversationHistory = [];
+
+                    chatBox.innerHTML = "";
+
+                    localStorage.removeItem(
+                        "normalChatCurrent"
+                    );
+
+                    alert("Logout successful!");
+
+                } catch (error) {
+
+                    console.error(
+                        "Logout error:",
+                        error
+                    );
+
+                    alert(
+                        "Logout nahi hua: " +
+                        error.message
+                    );
+                }
+            }
+        );
+
+
+        /* =========================
+           CHECK LOGIN
+        ========================= */
 
         async function checkLoginStatus() {
 
@@ -1108,12 +1178,20 @@
                     loginButton.textContent =
                         data.username;
 
+                    settingsUsername.textContent =
+                        data.username;
+
+                    loadCurrentChat();
+
                 } else {
 
                     loggedInUsername = null;
 
                     loginButton.textContent =
                         "Login";
+
+                    settingsUsername.textContent =
+                        "Not logged in";
                 }
 
             } catch (error) {
@@ -1125,6 +1203,10 @@
             }
         }
 
+
+        /* =========================
+           LOGIN / SIGNUP
+        ========================= */
 
         authSubmit.addEventListener(
             "click",
@@ -1230,8 +1312,6 @@
 
                             authMessage.textContent = "";
 
-                            loadCurrentChat();
-
                         },
                         500
                     );
@@ -1256,14 +1336,13 @@
         );
 
 
-        checkLoginStatus();
-
-
-        /* =================================
+        /* =========================
            VARIABLES
-        ================================= */
+        ========================= */
 
         let conversationHistory = [];
+
+        let isStreaming = false;
 
 
         const messageInput =
@@ -1300,9 +1379,9 @@
             document.getElementById("clearHistorySearch");
 
 
-        /* =================================
+        /* =========================
            ESCAPE HTML
-        ================================= */
+        ========================= */
 
         function escapeHtml(text) {
 
@@ -1316,9 +1395,9 @@
         }
 
 
-        /* =================================
+        /* =========================
            SAVE CURRENT CHAT
-        ================================= */
+        ========================= */
 
         function saveCurrentChat() {
 
@@ -1329,9 +1408,9 @@
         }
 
 
-        /* =================================
+        /* =========================
            LOAD CURRENT CHAT
-        ================================= */
+        ========================= */
 
         function loadCurrentChat() {
 
@@ -1401,9 +1480,9 @@
         }
 
 
-        /* =================================
+        /* =========================
            ADD MESSAGE
-        ================================= */
+        ========================= */
 
         function addMessageToScreen(
             role,
@@ -1436,14 +1515,44 @@
 
 
             chatBox.appendChild(div);
+
+            return div;
         }
 
 
-        /* =================================
+        /* =========================
+           CREATE STREAMING MESSAGE
+        ========================= */
+
+        function createStreamingMessage() {
+
+            const div =
+                document.createElement("div");
+
+            div.className =
+                "message bot";
+
+            div.innerHTML = `
+                <b>Normal Chat:</b><br>
+                <span class="streaming-text"></span>
+            `;
+
+            chatBox.appendChild(div);
+
+            return div;
+        }
+
+
+        /* =========================
            SEND MESSAGE
-        ================================= */
+        ========================= */
 
         async function sendMessage() {
+
+            if (isStreaming) {
+                return;
+            }
+
 
             const message =
                 messageInput.value.trim();
@@ -1454,11 +1563,23 @@
             }
 
 
-            sendButton.disabled =
-                true;
+            if (!loggedInUsername) {
+
+                loginModal.style.display =
+                    "flex";
+
+                authUsername.focus();
+
+                return;
+            }
 
 
-            /* USER MESSAGE */
+            isStreaming = true;
+
+            sendButton.disabled = true;
+
+            messageInput.disabled = true;
+
 
             conversationHistory.push({
                 role: "user",
@@ -1474,11 +1595,8 @@
 
             messageInput.value = "";
 
-
             saveCurrentChat();
 
-
-            /* TYPING */
 
             const thinking =
                 document.createElement("div");
@@ -1487,14 +1605,12 @@
             thinking.className =
                 "message bot";
 
-
             thinking.id =
                 "thinking";
 
 
             thinking.innerHTML = `
                 <b>Normal Chat:</b><br>
-
                 <span class="typing-dots">
                     <span></span>
                     <span></span>
@@ -1503,10 +1619,7 @@
             `;
 
 
-            chatBox.appendChild(
-                thinking
-            );
-
+            chatBox.appendChild(thinking);
 
             chatBox.scrollTop =
                 chatBox.scrollHeight;
@@ -1525,6 +1638,8 @@
                                     "application/json"
                             },
 
+                            credentials: "include",
+
                             body: JSON.stringify({
                                 message: message,
                                 history:
@@ -1534,31 +1649,234 @@
                     );
 
 
-                const data =
-                    await response.json();
+                /*
+                 * Login / normal JSON error
+                 */
+                const contentType =
+                    response.headers.get(
+                        "content-type"
+                    ) || "";
 
 
-                if (thinking) {
-                    thinking.remove();
+                if (
+                    !response.ok &&
+                    contentType.includes(
+                        "application/json"
+                    )
+                ) {
+
+                    const errorData =
+                        await response.json();
+
+                    throw new Error(
+                        errorData.error ||
+                        "Backend error"
+                    );
                 }
 
 
                 if (!response.ok) {
 
                     throw new Error(
-                        data.error ||
-                        "Backend error"
+                        `Server returned ${response.status}`
                     );
                 }
 
 
-                const reply =
-                    String(
-                        data.reply || ""
-                    ).trim();
+                /*
+                 * Remove thinking dots
+                 */
+
+                if (thinking) {
+                    thinking.remove();
+                }
 
 
-                if (!reply) {
+                /*
+                 * Streaming message
+                 */
+
+                const streamingMessage =
+                    createStreamingMessage();
+
+
+                const streamingText =
+                    streamingMessage.querySelector(
+                        ".streaming-text"
+                    );
+
+
+                /*
+                 * Get stream
+                 */
+
+                if (!response.body) {
+
+                    throw new Error(
+                        "Streaming response available nahi hai."
+                    );
+                }
+
+
+                const reader =
+                    response.body.getReader();
+
+
+                const decoder =
+                    new TextDecoder(
+                        "utf-8"
+                    );
+
+
+                let buffer = "";
+
+                let fullReply = "";
+
+
+                while (true) {
+
+                    const {
+                        value,
+                        done
+                    } = await reader.read();
+
+
+                    if (done) {
+                        break;
+                    }
+
+
+                    buffer += decoder.decode(
+                        value,
+                        {
+                            stream: true
+                        }
+                    );
+
+
+                    const events =
+                        buffer.split(
+                            "\n\n"
+                        );
+
+
+                    buffer =
+                        events.pop() || "";
+
+
+                    for (
+                        const event
+                        of events
+                    ) {
+
+                        const lines =
+                            event.split("\n");
+
+
+                        for (
+                            const line
+                            of lines
+                        ) {
+
+                            if (
+                                !line.startsWith(
+                                    "data:"
+                                )
+                            ) {
+                                continue;
+                            }
+
+
+                            const jsonText =
+                                line
+                                    .slice(5)
+                                    .trim();
+
+
+                            if (!jsonText) {
+                                continue;
+                            }
+
+
+                            let payload;
+
+
+                            try {
+
+                                payload =
+                                    JSON.parse(
+                                        jsonText
+                                    );
+
+                            } catch (parseError) {
+
+                                console.error(
+                                    "Stream JSON parse error:",
+                                    parseError
+                                );
+
+                                continue;
+                            }
+
+
+                            /*
+                             * Text chunk
+                             */
+
+                            if (
+                                payload.type ===
+                                "chunk"
+                            ) {
+
+                                const chunk =
+                                    String(
+                                        payload.text ||
+                                        ""
+                                    );
+
+
+                                fullReply +=
+                                    chunk;
+
+
+                                streamingText.textContent =
+                                    fullReply;
+
+
+                                chatBox.scrollTop =
+                                    chatBox.scrollHeight;
+                            }
+
+
+                            /*
+                             * Stream completed
+                             */
+
+                            if (
+                                payload.type ===
+                                "done"
+                            ) {
+
+                                console.log(
+                                    "Streaming completed."
+                                );
+                            }
+                        }
+                    }
+                }
+
+
+                /*
+                 * Save final answer
+                 */
+
+                fullReply =
+                    fullReply.trim();
+
+
+                if (!fullReply) {
+
+                    streamingMessage.remove();
 
                     throw new Error(
                         "AI ne empty reply diya."
@@ -1566,18 +1884,10 @@
                 }
 
 
-                /* BOT MESSAGE */
-
                 conversationHistory.push({
                     role: "assistant",
-                    content: reply
+                    content: fullReply
                 });
-
-
-                addMessageToScreen(
-                    "assistant",
-                    reply
-                );
 
 
                 saveCurrentChat();
@@ -1594,6 +1904,11 @@
                 }
 
 
+                /*
+                 * Only add error if no normal
+                 * streaming response exists.
+                 */
+
                 addMessageToScreen(
                     "assistant",
                     "Error: " +
@@ -1608,19 +1923,38 @@
 
             } finally {
 
-                sendButton.disabled =
-                    false;
+                isStreaming = false;
+
+                sendButton.disabled = false;
+
+                messageInput.disabled = false;
 
                 messageInput.focus();
             }
         }
 
 
-        /* =================================
+        /* =========================
            NEW CHAT
-        ================================= */
+        ========================= */
 
         async function newChat() {
+
+            if (isStreaming) {
+                return;
+            }
+
+
+            if (!loggedInUsername) {
+
+                loginModal.style.display =
+                    "flex";
+
+                authUsername.focus();
+
+                return;
+            }
+
 
             try {
 
@@ -1635,6 +1969,8 @@
                                     "application/json"
                             },
 
+                            credentials: "include",
+
                             body: JSON.stringify({
                                 history:
                                     conversationHistory
@@ -1643,8 +1979,21 @@
                     );
 
 
+                const contentType =
+                    response.headers.get(
+                        "content-type"
+                    ) || "";
+
+
                 const data =
-                    await response.json();
+                    contentType.includes(
+                        "application/json"
+                    )
+                        ? await response.json()
+                        : {
+                            error:
+                                `Server returned ${response.status}`
+                        };
 
 
                 if (!response.ok) {
@@ -1665,7 +2014,6 @@
 
 
                 chatBox.innerHTML = "";
-
 
                 messageInput.value = "";
 
@@ -1694,11 +2042,27 @@
         }
 
 
-        /* =================================
+        /* =========================
            SHOW SIDEBAR
-        ================================= */
+        ========================= */
 
         async function showSidebar() {
+
+            if (isStreaming) {
+                return;
+            }
+
+
+            if (!loggedInUsername) {
+
+                loginModal.style.display =
+                    "flex";
+
+                authUsername.focus();
+
+                return;
+            }
+
 
             sidebar.classList.add(
                 "open"
@@ -1713,12 +2077,28 @@
 
                 const response =
                     await fetch(
-                        `${API_URL}/history`
+                        `${API_URL}/history`,
+                        {
+                            credentials: "include"
+                        }
                     );
 
 
+                const contentType =
+                    response.headers.get(
+                        "content-type"
+                    ) || "";
+
+
                 const data =
-                    await response.json();
+                    contentType.includes(
+                        "application/json"
+                    )
+                        ? await response.json()
+                        : {
+                            error:
+                                `Server returned ${response.status}`
+                        };
 
 
                 if (!response.ok) {
@@ -1788,9 +2168,9 @@
         }
 
 
-        /* =================================
+        /* =========================
            CREATE HISTORY ITEM
-        ================================= */
+        ========================= */
 
         function createHistoryItem(
             chat,
@@ -1840,8 +2220,6 @@
                     : defaultTitle;
 
 
-            /* TITLE */
-
             const title =
                 document.createElement(
                     "span"
@@ -1856,8 +2234,6 @@
                 currentTitle;
 
 
-            /* ACTIONS */
-
             const actions =
                 document.createElement(
                     "div"
@@ -1868,8 +2244,6 @@
                 "sidebar-actions";
 
 
-            /* RENAME */
-
             const renameButton =
                 document.createElement(
                     "button"
@@ -1879,20 +2253,15 @@
             renameButton.type =
                 "button";
 
-
             renameButton.className =
                 "sidebar-rename";
-
 
             renameButton.title =
                 "Rename";
 
-
             renameButton.textContent =
                 "✏️";
 
-
-            /* DELETE */
 
             const deleteButton =
                 document.createElement(
@@ -1903,14 +2272,11 @@
             deleteButton.type =
                 "button";
 
-
             deleteButton.className =
                 "sidebar-delete";
 
-
             deleteButton.title =
                 "Delete";
-
 
             deleteButton.textContent =
                 "🗑️";
@@ -1920,23 +2286,14 @@
                 renameButton
             );
 
-
             actions.appendChild(
                 deleteButton
             );
 
+            item.appendChild(title);
 
-            item.appendChild(
-                title
-            );
+            item.appendChild(actions);
 
-
-            item.appendChild(
-                actions
-            );
-
-
-            /* OPEN CHAT */
 
             item.addEventListener(
                 "click",
@@ -1947,9 +2304,7 @@
                             ".sidebar-chat"
                         )
                         .forEach(
-                            function (
-                                chatItem
-                            ) {
+                            function (chatItem) {
 
                                 chatItem.classList
                                     .remove(
@@ -1965,9 +2320,7 @@
                     );
 
 
-                    openHistoryChat(
-                        chat
-                    );
+                    openHistoryChat(chat);
 
 
                     sidebar.classList.remove(
@@ -1976,8 +2329,6 @@
                 }
             );
 
-
-            /* RENAME */
 
             renameButton.addEventListener(
                 "click",
@@ -1995,9 +2346,7 @@
                         );
 
 
-                    if (
-                        newName === null
-                    ) {
+                    if (newName === null) {
                         return;
                     }
 
@@ -2029,6 +2378,8 @@
                                             "application/json"
                                     },
 
+                                    credentials: "include",
+
                                     body: JSON.stringify({
                                         name:
                                             trimmedName
@@ -2055,12 +2406,6 @@
 
                     } catch (error) {
 
-                        console.error(
-                            "Rename error:",
-                            error
-                        );
-
-
                         alert(
                             "Rename nahi hua: " +
                             error.message
@@ -2069,8 +2414,6 @@
                 }
             );
 
-
-            /* DELETE */
 
             deleteButton.addEventListener(
                 "click",
@@ -2098,7 +2441,8 @@
                             await fetch(
                                 `${API_URL}/history/${realIndex}`,
                                 {
-                                    method: "DELETE"
+                                    method: "DELETE",
+                                    credentials: "include"
                                 }
                             );
 
@@ -2121,12 +2465,6 @@
 
                     } catch (error) {
 
-                        console.error(
-                            "Delete error:",
-                            error
-                        );
-
-
                         alert(
                             "Chat delete nahi hui: " +
                             error.message
@@ -2136,15 +2474,13 @@
             );
 
 
-            sidebarHistory.appendChild(
-                item
-            );
+            sidebarHistory.appendChild(item);
         }
 
 
-        /* =================================
+        /* =========================
            OPEN OLD CHAT
-        ================================= */
+        ========================= */
 
         function openHistoryChat(chat) {
 
@@ -2186,9 +2522,9 @@
         }
 
 
-        /* =================================
-           SEARCH HISTORY
-        ================================= */
+        /* =========================
+           SEARCH
+        ========================= */
 
         historySearch.addEventListener(
             "input",
@@ -2205,9 +2541,7 @@
                         ".sidebar-chat"
                     )
                     .forEach(
-                        function (
-                            chatItem
-                        ) {
+                        function (chatItem) {
 
                             const text =
                                 chatItem.innerText
@@ -2215,9 +2549,7 @@
 
 
                             chatItem.style.display =
-                                text.includes(
-                                    searchText
-                                )
+                                text.includes(searchText)
                                     ? "flex"
                                     : "none";
                         }
@@ -2226,26 +2558,18 @@
         );
 
 
-        /* =================================
-           CLEAR SEARCH
-        ================================= */
-
         clearHistorySearch.addEventListener(
             "click",
             function () {
 
-                historySearch.value =
-                    "";
-
+                historySearch.value = "";
 
                 document
                     .querySelectorAll(
                         ".sidebar-chat"
                     )
                     .forEach(
-                        function (
-                            chatItem
-                        ) {
+                        function (chatItem) {
 
                             chatItem.style.display =
                                 "flex";
@@ -2255,9 +2579,9 @@
         );
 
 
-        /* =================================
+        /* =========================
            BUTTON EVENTS
-        ================================= */
+        ========================= */
 
         sendButton.addEventListener(
             "click",
@@ -2294,9 +2618,9 @@
         );
 
 
-        /* =================================
+        /* =========================
            ENTER KEY
-        ================================= */
+        ========================= */
 
         messageInput.addEventListener(
             "keydown",
@@ -2315,11 +2639,11 @@
         );
 
 
-        /* =================================
+        /* =========================
            START
-        ================================= */
+        ========================= */
 
-        loadCurrentChat();
+        checkLoginStatus();
 
         messageInput.focus();
 

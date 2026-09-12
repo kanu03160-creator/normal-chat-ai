@@ -1,3 +1,5 @@
+import urllib.parse
+import urllib.request
 import psycopg2
 import json
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -602,7 +604,108 @@ def health():
     return jsonify({
         "status": "ok"
     })
+# =========================
+# REAL-TIME WEATHER
+# =========================
 
+def get_weather(city):
+    try:
+        # City name ko safely encode karo
+        city_encoded = urllib.parse.quote(city)
+
+        # City -> latitude/longitude
+        geo_url = (
+            "https://geocoding-api.open-meteo.com/v1/search"
+            f"?name={city_encoded}&count=1&language=en&format=json"
+        )
+
+        with urllib.request.urlopen(geo_url, timeout=10) as response:
+            geo_data = json.loads(response.read().decode("utf-8"))
+
+        if not geo_data.get("results"):
+            return f"Sorry, mujhe '{city}' naam ki city nahi mili."
+
+        location = geo_data["results"][0]
+
+        latitude = location["latitude"]
+        longitude = location["longitude"]
+        city_name = location["name"]
+        country = location.get("country", "")
+        timezone = location.get("timezone", "auto")
+
+        # Live weather
+        weather_url = (
+            "https://api.open-meteo.com/v1/forecast"
+            f"?latitude={latitude}"
+            f"&longitude={longitude}"
+            "&current=temperature_2m,relative_humidity_2m,"
+            "apparent_temperature,precipitation,weather_code,wind_speed_10m"
+            f"&timezone={urllib.parse.quote(timezone)}"
+        )
+
+        with urllib.request.urlopen(weather_url, timeout=10) as response:
+            weather_data = json.loads(response.read().decode("utf-8"))
+
+        current = weather_data.get("current", {})
+        units = weather_data.get("current_units", {})
+
+        temperature = current.get("temperature_2m")
+        feels_like = current.get("apparent_temperature")
+        humidity = current.get("relative_humidity_2m")
+        rain = current.get("precipitation")
+        wind = current.get("wind_speed_10m")
+        weather_code = current.get("weather_code")
+
+        # WMO weather codes
+        conditions = {
+            0: "Clear sky",
+            1: "Mainly clear",
+            2: "Partly cloudy",
+            3: "Overcast",
+            45: "Foggy",
+            48: "Foggy",
+            51: "Light drizzle",
+            53: "Drizzle",
+            55: "Heavy drizzle",
+            56: "Freezing drizzle",
+            57: "Heavy freezing drizzle",
+            61: "Light rain",
+            63: "Rain",
+            65: "Heavy rain",
+            66: "Freezing rain",
+            67: "Heavy freezing rain",
+            71: "Light snow",
+            73: "Snow",
+            75: "Heavy snow",
+            77: "Snow grains",
+            80: "Light rain showers",
+            81: "Rain showers",
+            82: "Heavy rain showers",
+            85: "Light snow showers",
+            86: "Heavy snow showers",
+            95: "Thunderstorm",
+            96: "Thunderstorm with hail",
+            99: "Heavy thunderstorm with hail"
+        }
+
+        condition = conditions.get(
+            weather_code,
+            "Unknown weather"
+        )
+
+        return (
+            f"🌤️ Weather in {city_name}, {country}\n\n"
+            f"🌡️ Temperature: {temperature}°C\n"
+            f"🤒 Feels like: {feels_like}°C\n"
+            f"☁️ Condition: {condition}\n"
+            f"💧 Humidity: {humidity}%\n"
+            f"🌧️ Precipitation: {rain} mm\n"
+            f"💨 Wind speed: {wind} km/h"
+        )
+
+    except Exception as e:
+        print("WEATHER ERROR:", repr(e))
+        return "Sorry, weather service abhi available nahi hai."
 
 # ==========================================
 # GEMINI GENERATION HELPER
@@ -719,7 +822,102 @@ def chat():
             "history",
             []
         )
+        # ======================================
+        # REAL-TIME WEATHER DETECTION
+        # ======================================
 
+        weather_city = None
+
+        weather_patterns = [
+            # Jaipur ka weather batao
+            r"^(.+?)\s+(?:ka|ki|ke)\s+(?:weather|mausam)(?:\s+(?:batao|bata|kya hai|kaisa hai|kaisi hai))?[?.!]*$",
+
+            # Jaipur mein mausam kaisa hai
+            r"^(.+?)\s+(?:mein|me)\s+(?:weather|mausam)(?:\s+(?:batao|bata|kaisa hai|kaisi hai|kya hai))?[?.!]*$",
+
+            # weather in Jaipur / weather of Jaipur
+            r"^(?:weather|mausam)\s+(?:in|of)\s+(.+?)[?.!]*$",
+
+            # What is the weather in Jaipur
+            r"^(?:what(?:'s| is)?\s+)?(?:the\s+)?weather\s+(?:in|of)\s+(.+?)[?.!]*$",
+
+            # Jaipur temperature
+            r"^(?:temperature|temp)\s+(?:in|of|ka|ki|ke)?\s*(.+?)[?.!]*$",
+
+            # temperature of Jaipur
+            r"^(?:what is\s+)?(?:the\s+)?temperature\s+(?:in|of)\s+(.+?)[?.!]*$",
+        ]
+
+        for pattern in weather_patterns:
+
+            match = re.search(
+                pattern,
+                message.strip(),
+                re.IGNORECASE
+            )
+
+            if match:
+                weather_city = match.group(1).strip(
+                    " .?!,:'\""
+                )
+                break
+
+        if weather_city:
+
+            print(
+                "WEATHER REQUEST DETECTED:",
+                weather_city
+            )
+
+            weather_reply = get_weather(
+                weather_city
+            )
+
+            def weather_stream():
+
+                words = weather_reply.split(" ")
+
+                for i, word in enumerate(words):
+
+                    chunk = word
+
+                    if i < len(words) - 1:
+                        chunk += " "
+
+                    yield (
+                        "data: "
+                        +
+                        json_module.dumps({
+                            "type": "chunk",
+                            "text": chunk
+                        })
+                        +
+                        "\n\n"
+                    )
+
+                    time.sleep(0.015)
+
+                yield (
+                    "data: "
+                    +
+                    json_module.dumps({
+                        "type": "done"
+                    })
+                    +
+                    "\n\n"
+                )
+
+            return Response(
+                stream_with_context(
+                    weather_stream()
+                ),
+                mimetype="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "X-Accel-Buffering": "no",
+                    "Connection": "keep-alive"
+                }
+            )
         # ======================================
         # PERSONAL QUESTION
         # ======================================
