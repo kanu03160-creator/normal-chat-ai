@@ -934,19 +934,19 @@ user: {message}
 
     except Exception as chat_error:
 
-     import traceback
+        import traceback
 
-    print("========== CHAT ERROR ==========")
-    print("ERROR:", repr(chat_error))
+        print("========== CHAT ERROR ==========")
+        print("ERROR:", repr(chat_error))
 
-    traceback.print_exc()
+        traceback.print_exc()
 
-    print("================================")
+        print("================================")
 
-    return jsonify({
-        "error": "Internal server error",
-        "details": str(chat_error)
-    }), 500
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(chat_error)
+        }), 500
 
 
 # ==========================================
