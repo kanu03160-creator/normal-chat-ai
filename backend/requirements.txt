@@ -3,3 +3,4 @@ flask-cors
 google-genai
 gunicorn
 psycopg2-binary
+beautifulsoup4
