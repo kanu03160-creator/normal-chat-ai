@@ -7,7 +7,9 @@ import os
 import threading
 import time
 import json as json_module
+from dotenv import load_dotenv
 
+load_dotenv()
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from flask import (
@@ -243,14 +245,16 @@ def save_memory(
 # AUTOMATIC MEMORY DETECTION
 # ==========================================
 
-def detect_memory(
-    message,
-    user_memory
-):
+
+def detect_memory(message, user_memory):
 
     text = message.strip()
 
     patterns = [
+
+        # =========================
+        # NAME
+        # =========================
 
         (
             r"^(?:mera naam|my name is)\s+(.+?)(?:\s+hai)?[.!?]?$",
@@ -258,9 +262,37 @@ def detect_memory(
         ),
 
         (
+            r"^(?:main|mai|i am|i'm)\s+([A-Za-z][A-Za-z\s]{1,40})[.!?]?$",
+            "name"
+        ),
+
+        (
+            r"^(?:mujhe|you can)\s+(?:kunal|mujhe)\s+(?:bulao|call me)[.!?]?$",
+            "name"
+        ),
+
+        # =========================
+        # COLLEGE
+        # =========================
+
+        (
             r"^(?:main|mai)\s+(.+?)\s+me\s+padh(?:ta|ti)\s+hoon[.!?]?$",
             "college"
         ),
+
+        (
+            r"^(?:i study at|i study in)\s+(.+?)[.!?]?$",
+            "college"
+        ),
+
+        (
+            r"^(?:mera|meri)\s+college\s+(.+?)(?:\s+hai)?[.!?]?$",
+            "college"
+        ),
+
+        # =========================
+        # CITY
+        # =========================
 
         (
             r"^(?:main|mai)\s+(.+?)\s+me\s+rehta\s+hoon[.!?]?$",
@@ -273,6 +305,15 @@ def detect_memory(
         ),
 
         (
+            r"^(?:i live in|i am from|i'm from)\s+(.+?)[.!?]?$",
+            "city"
+        ),
+
+        # =========================
+        # FAVORITE GAME
+        # =========================
+
+        (
             r"^(?:mera|meri)\s+(?:favorite|favourite)\s+game\s+(.+?)(?:\s+hai)?[.!?]?$",
             "favorite game"
         ),
@@ -283,9 +324,13 @@ def detect_memory(
         ),
 
         (
-            r"^mujhe\s+(.+?)\s+pasand\s+hai[.!?]?$",
-            "preference"
+            r"^(?:mujhe|i)\s+(.+?)\s+(?:game\s+)?pasand\s+hai[.!?]?$",
+            "favorite game"
         ),
+
+        # =========================
+        # FAVORITE COLOR
+        # =========================
 
         (
             r"^(?:mera|meri)\s+(?:favorite|favourite)\s+color\s+(.+?)(?:\s+hai)?[.!?]?$",
@@ -297,10 +342,28 @@ def detect_memory(
             "favorite color"
         ),
 
+        # =========================
+        # PROGRAMMING LANGUAGE
+        # =========================
+
         (
             r"^(?:mera|meri)\s+(?:favorite|favourite)\s+programming language\s+(.+?)(?:\s+hai)?[.!?]?$",
             "favorite programming language"
         ),
+
+        (
+            r"^my\s+(?:favorite|favourite)\s+programming language\s+is\s+(.+?)[.!?]?$",
+            "favorite programming language"
+        ),
+
+        (
+            r"^(?:i like|i love)\s+(python|java|javascript|c\+\+|c|php|go|rust)[.!?]?$",
+            "favorite programming language"
+        ),
+
+        # =========================
+        # GOAL
+        # =========================
 
         (
             r"^mera goal\s+(.+?)(?:\s+hai)?[.!?]?$",
@@ -310,6 +373,25 @@ def detect_memory(
         (
             r"^my goal is\s+(.+?)[.!?]?$",
             "goal"
+        ),
+
+        (
+            r"^(?:i want to become|i want to be)\s+(.+?)[.!?]?$",
+            "goal"
+        ),
+
+        # =========================
+        # GENERAL PREFERENCE
+        # =========================
+
+        (
+            r"^mujhe\s+(.+?)\s+pasand\s+hai[.!?]?$",
+            "preference"
+        ),
+
+        (
+            r"^i like\s+(.+?)[.!?]?$",
+            "preference"
         )
     ]
 
@@ -324,9 +406,13 @@ def detect_memory(
         if not match:
             continue
 
-        value = clean_value(
-            match.group(1)
-        )
+        # Special handling for fixed name phrase
+        if key == "name" and "mujhe" in text.lower():
+            value = "Kunal"
+        else:
+            value = clean_value(
+                match.group(1)
+            )
 
         if not value:
             return
@@ -348,7 +434,6 @@ def detect_memory(
         )
 
         return
-
 
 # ==========================================
 # PERSONAL QUESTIONS
