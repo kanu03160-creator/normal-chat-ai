@@ -6,17 +6,17 @@ import re
 import os
 import threading
 import time
+from datetime import datetime, timezone, timedelta
 import json as json_module
 import base64
+import csv
 import xml.etree.ElementTree as ET
+from io import BytesIO, StringIO
+
 from dotenv import load_dotenv
 
 load_dotenv()
-
-from werkzeug.security import (
-    generate_password_hash,
-    check_password_hash
-)
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from flask import (
     Flask,
@@ -45,37 +45,36 @@ from memory import (
 
 from bs4 import BeautifulSoup
 
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None
+
+try:
+    from docx import Document
+except ImportError:
+    Document = None
+
+try:
+    from openpyxl import load_workbook
+except ImportError:
+    load_workbook = None
+
 
 # ==========================================
 # DATA FOLDER
 # ==========================================
 
-BASE_DIR = os.path.dirname(
-    os.path.abspath(__file__)
-)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "..", "data")
+USERS_FILE = os.path.join(DATA_DIR, "users.json")
 
-DATA_DIR = os.path.join(
-    BASE_DIR,
-    "..",
-    "data"
-)
-
-USERS_FILE = os.path.join(
-    DATA_DIR,
-    "users.json"
-)
-
-os.makedirs(
-    DATA_DIR,
-    exist_ok=True
-)
+os.makedirs(DATA_DIR, exist_ok=True)
 
 
 def load_users():
 
-    if not os.path.exists(
-        USERS_FILE
-    ):
+    if not os.path.exists(USERS_FILE):
         return []
 
     try:
@@ -124,23 +123,14 @@ if not SECRET_KEY:
     )
 
 
-app = Flask(
-    __name__
-)
+app = Flask(__name__)
 
 app.secret_key = SECRET_KEY
+app.config["MAX_CONTENT_LENGTH"] = 14 * 1024 * 1024
 
-app.config[
-    "SESSION_COOKIE_HTTPONLY"
-] = True
-
-app.config[
-    "SESSION_COOKIE_SAMESITE"
-] = "Lax"
-
-app.config[
-    "SESSION_COOKIE_SECURE"
-] = (
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = (
     os.environ.get("RENDER") == "true"
 )
 
@@ -225,9 +215,7 @@ client = genai.Client()
 
 def clean_value(value):
 
-    value = str(
-        value
-    ).strip()
+    value = str(value).strip()
 
     value = re.sub(
         r"\s+(hai|hain|is)$",
@@ -280,239 +268,85 @@ def save_memory(
 # AUTOMATIC MEMORY DETECTION
 # ==========================================
 
-def detect_memory(
-    message,
-    user_memory
-):
 
-    text = re.sub(
-        r"\s+",
-        " ",
-        message.strip()
-    )
+def detect_memory(message, user_memory):
 
+    text = re.sub(r"\s+", " ", message.strip())
     lower = text.lower()
 
-    lower = lower.replace(
-        "favourite",
-        "favorite"
-    )
+    # Normalize common Hinglish spellings so natural variations work.
+    lower = lower.replace("favourite", "favorite")
 
     patterns = [
 
         # NAME
-
-        (
-            r"^(?:mera naam|my name is|my name's)"
-            r"\s+(.+?)(?:\s+hai)?[.!?]?$",
-            "name"
-        ),
-
-        (
-            r"^(?:main|mai|i am|i'm)"
-            r"\s+([A-Za-z][A-Za-z\s]{1,40})[.!?]?$",
-            "name"
-        ),
-
-        (
-            r"^(?:call me|you can call me)"
-            r"\s+([A-Za-z][A-Za-z\s]{1,40})[.!?]?$",
-            "name"
-        ),
-
-        (
-            r"^mujhe\s+(.+?)\s+"
-            r"(?:ke naam se|naam se)\s+bulao[.!?]?$",
-            "name"
-        ),
+        (r"^(?:mera naam|my name is|my name's)\s+(.+?)(?:\s+hai)?[.!?]?$", "name"),
+        (r"^(?:main|mai|i am|i'm)\s+([A-Za-z][A-Za-z\s]{1,40})[.!?]?$", "name"),
+        (r"^(?:mujhe|you can)\s+(?:kunal|mujhe)\s+(?:bulao|call me)[.!?]?$", "name"),
+        (r"^(?:call me|you can call me)\s+([A-Za-z][A-Za-z\s]{1,40})[.!?]?$", "name"),
+        (r"^(?:mujhe)\s+(.+?)\s+(?:ke naam se|naam se)\s+bulao[.!?]?$", "name"),
 
         # COLLEGE
-
-        (
-            r"^(?:main|mai)\s+(.+?)\s+me\s+"
-            r"padh(?:ta|ti)\s+hoon[.!?]?$",
-            "college"
-        ),
-
-        (
-            r"^(?:i study at|i study in|i go to)"
-            r"\s+(.+?)[.!?]?$",
-            "college"
-        ),
-
-        (
-            r"^(?:mera|meri)\s+college\s+"
-            r"(.+?)(?:\s+hai)?[.!?]?$",
-            "college"
-        ),
+        (r"^(?:main|mai)\s+(.+?)\s+me\s+padh(?:ta|ti)\s+hoon[.!?]?$", "college"),
+        (r"^(?:i study at|i study in|i go to)\s+(.+?)[.!?]?$", "college"),
+        (r"^(?:mera|meri)\s+college\s+(.+?)(?:\s+hai)?[.!?]?$", "college"),
 
         # CITY
-
-        (
-            r"^(?:main|mai)\s+(.+?)\s+me\s+"
-            r"rehta\s+hoon[.!?]?$",
-            "city"
-        ),
-
-        (
-            r"^(?:meri city|my city)\s+"
-            r"(.+?)(?:\s+hai)?[.!?]?$",
-            "city"
-        ),
-
-        (
-            r"^(?:i live in|i am from|i'm from)"
-            r"\s+(.+?)[.!?]?$",
-            "city"
-        ),
+        (r"^(?:main|mai)\s+(.+?)\s+me\s+rehta\s+hoon[.!?]?$", "city"),
+        (r"^(?:meri city|my city)\s+(.+?)(?:\s+hai)?[.!?]?$", "city"),
+        (r"^(?:i live in|i am from|i'm from)\s+(.+?)[.!?]?$", "city"),
 
         # FAVORITE GAME
-
-        (
-            r"^(?:mera|meri)\s+favorite\s+game\s+"
-            r"(.+?)(?:\s+hai)?[.!?]?$",
-            "favorite game"
-        ),
-
-        (
-            r"^my\s+favorite\s+game\s+is\s+"
-            r"(.+?)[.!?]?$",
-            "favorite game"
-        ),
-
-        (
-            r"^(?:mujhe|i)\s+(.+?)\s+"
-            r"(?:game\s+)?pasand\s+hai[.!?]?$",
-            "favorite game"
-        ),
+        (r"^(?:mera|meri)\s+favorite\s+game\s+(.+?)(?:\s+hai)?[.!?]?$", "favorite game"),
+        (r"^my\s+favorite\s+game\s+is\s+(.+?)[.!?]?$", "favorite game"),
+        (r"^(?:mujhe|i)\s+(.+?)\s+(?:game\s+)?pasand\s+hai[.!?]?$", "favorite game"),
 
         # FAVORITE COLOR
-
-        (
-            r"^(?:mera|meri)\s+favorite\s+color\s+"
-            r"(.+?)(?:\s+hai)?[.!?]?$",
-            "favorite color"
-        ),
-
-        (
-            r"^my\s+favorite\s+color\s+is\s+"
-            r"(.+?)[.!?]?$",
-            "favorite color"
-        ),
+        (r"^(?:mera|meri)\s+favorite\s+color\s+(.+?)(?:\s+hai)?[.!?]?$", "favorite color"),
+        (r"^my\s+favorite\s+color\s+is\s+(.+?)[.!?]?$", "favorite color"),
 
         # PROGRAMMING LANGUAGE
-
-        (
-            r"^(?:mera|meri)\s+favorite\s+"
-            r"programming language\s+"
-            r"(.+?)(?:\s+hai)?[.!?]?$",
-            "favorite programming language"
-        ),
-
-        (
-            r"^my\s+favorite\s+programming language\s+"
-            r"is\s+(.+?)[.!?]?$",
-            "favorite programming language"
-        ),
-
-        (
-            r"^(?:i like|i love)\s+"
-            r"(python|java|javascript|c\+\+|c|php|go|rust)"
-            r"[.!?]?$",
-            "favorite programming language"
-        ),
+        (r"^(?:mera|meri)\s+favorite\s+programming language\s+(.+?)(?:\s+hai)?[.!?]?$", "favorite programming language"),
+        (r"^my\s+favorite\s+programming language\s+is\s+(.+?)[.!?]?$", "favorite programming language"),
+        (r"^(?:i like|i love)\s+(python|java|javascript|c\+\+|c|php|go|rust)[.!?]?$", "favorite programming language"),
 
         # GOAL
-
-        (
-            r"^mera goal\s+"
-            r"(.+?)(?:\s+hai)?[.!?]?$",
-            "goal"
-        ),
-
-        (
-            r"^my goal is\s+"
-            r"(.+?)[.!?]?$",
-            "goal"
-        ),
-
-        (
-            r"^(?:i want to become|i want to be|mera aim)"
-            r"\s+(.+?)[.!?]?$",
-            "goal"
-        ),
+        (r"^mera goal\s+(.+?)(?:\s+hai)?[.!?]?$", "goal"),
+        (r"^my goal is\s+(.+?)[.!?]?$", "goal"),
+        (r"^(?:i want to become|i want to be|mera aim)\s+(.+?)[.!?]?$", "goal"),
 
         # GENERAL PREFERENCE
-
-        (
-            r"^mujhe\s+(.+?)\s+"
-            r"pasand\s+hai[.!?]?$",
-            "preference"
-        ),
-
-        (
-            r"^i like\s+(.+?)[.!?]?$",
-            "preference"
-        )
+        (r"^mujhe\s+(.+?)\s+pasand\s+hai[.!?]?$", "preference"),
+        (r"^i like\s+(.+?)[.!?]?$", "preference")
     ]
 
     for pattern, key in patterns:
-
-        match = re.search(
-            pattern,
-            lower,
-            re.IGNORECASE
-        )
-
+        match = re.search(pattern, lower, re.IGNORECASE)
         if not match:
             continue
 
-        value = clean_value(
-            match.group(1)
-        )
-
+        value = clean_value(match.group(1))
         if not value:
             return None, None
 
-        original_match = re.search(
-            pattern,
-            text,
-            re.IGNORECASE
-        )
-
+        # Keep the user's original capitalization for stored values.
+        original_match = re.search(pattern, text, re.IGNORECASE)
         if original_match:
+            value = clean_value(original_match.group(1))
 
-            value = clean_value(
-                original_match.group(1)
-            )
-
+        # Guard against accidentally storing conversational filler.
         if len(value) > 120:
             return None, None
 
         if key == "preference":
-
-            save_memory(
-                "favorite",
-                value,
-                user_memory
-            )
-
+            save_memory("favorite", value, user_memory)
         else:
+            save_memory(key, value, user_memory)
 
-            save_memory(
-                key,
-                value,
-                user_memory
-            )
-
-        print(
-            f"SMART MEMORY DETECTED: {key} = {value}"
-        )
-
+        print(f"SMART MEMORY DETECTED: {key} = {value}")
         return None, None
 
     return None, None
-
 
 # ==========================================
 # PERSONAL QUESTIONS
@@ -689,8 +523,7 @@ def signup():
         if not data:
 
             return jsonify({
-                "error":
-                "Request data missing"
+                "error": "Request data missing"
             }), 400
 
         username = str(
@@ -1176,87 +1009,14 @@ def get_weather(city):
 # WEB SEARCH
 # ==========================================
 
-def _clean_search_url(url):
-
-    url = str(
-        url or ""
-    ).strip()
-
-    if not url:
-        return ""
-
-    try:
-
-        parsed = urllib.parse.urlparse(
-            url
-        )
-
-        query_params = urllib.parse.parse_qs(
-            parsed.query
-        )
-
-        google_target = query_params.get(
-            "q"
-        )
-
-        ddg_target = query_params.get(
-            "uddg"
-        )
-
-        if (
-            google_target
-            and google_target[0]
-        ):
-
-            url = urllib.parse.unquote(
-                google_target[0]
-            )
-
-        elif (
-            ddg_target
-            and ddg_target[0]
-        ):
-
-            url = urllib.parse.unquote(
-                ddg_target[0]
-            )
-
-    except Exception:
-
-        pass
-
-    if url.startswith("/"):
-        return ""
-
-    if not url.startswith(
-        (
-            "http://",
-            "https://"
-        )
-    ):
-        return ""
-
-    return url
-
-
 def _search_domain(url):
 
     try:
-
-        hostname = urllib.parse.urlparse(
-            url
-        ).netloc.lower()
-
-        if hostname.startswith(
-            "www."
-        ):
-
+        hostname = urllib.parse.urlparse(str(url or "")).netloc.lower()
+        if hostname.startswith("www."):
             hostname = hostname[4:]
-
         return hostname
-
     except Exception:
-
         return ""
 
 
@@ -1265,20 +1025,35 @@ def web_search(
     max_results=5
 ):
 
+    """Search current web/news results through Google News RSS.
+
+    Gemini is used only for answer generation; search results are fetched
+    independently so a Gemini Search-grounding quota does not break search.
+    """
+
     try:
 
-        query = re.sub(
-            r"\s+",
-            " ",
-            str(query).strip()
-        )
+        query = re.sub(r"\s+", " ", str(query).strip())
 
         if not query:
             return []
 
+        # Add the current India date for time-sensitive queries so the
+        # RSS search is anchored to today's news rather than older results.
+        ist = timezone(timedelta(hours=5, minutes=30))
+        current_date = datetime.now(ist).strftime("%d %B %Y")
+        current_query = query
+        current_markers = (
+            "latest", "current", "today", "tonight", "recent",
+            "aaj", "ajj", "abhi", "taaza", "taza", "filhaal",
+            "news", "update", "live"
+        )
+        if any(marker in query.lower() for marker in current_markers):
+            current_query = f"{query} {current_date}"
+
         search_url = (
             "https://news.google.com/rss/search?q="
-            + urllib.parse.quote(query)
+            + urllib.parse.quote(current_query)
             + "&hl=en-IN&gl=IN&ceid=IN:en"
         )
 
@@ -1286,9 +1061,10 @@ def web_search(
             search_url,
             headers={
                 "User-Agent":
-                "Mozilla/5.0",
-                "Accept":
-                "application/rss+xml, application/xml, text/xml, */*"
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0 Safari/537.36",
+                "Accept-Language": "en-IN,en;q=0.9"
             }
         )
 
@@ -1297,179 +1073,51 @@ def web_search(
             timeout=15
         ) as response:
 
-            xml_data = response.read().decode(
-                "utf-8",
-                errors="ignore"
-            )
+            xml_data = response.read()
 
-        root = ET.fromstring(
-            xml_data
-        )
+        root = ET.fromstring(xml_data)
 
         results = []
-
         seen_urls = set()
         seen_titles = set()
 
-        for item in root.findall(
-            ".//item"
-        ):
+        for item in root.findall(".//item"):
 
-            title_element = item.find(
-                "title"
+            title = (item.findtext("title") or "").strip()
+            url = (item.findtext("link") or "").strip()
+            description = (item.findtext("description") or "").strip()
+            pub_date = (item.findtext("pubDate") or "").strip()
+
+            source_element = item.find("source")
+            source_name = (
+                source_element.text.strip()
+                if source_element is not None and source_element.text
+                else ""
             )
-
-            link_element = item.find(
-                "link"
-            )
-
-            description_element = item.find(
-                "description"
-            )
-
-            pubdate_element = item.find(
-                "pubDate"
-            )
-
-            source_element = item.find(
-                "source"
-            )
-
-            if title_element is None:
-                continue
-
-            title = (
-                title_element.text or ""
-            ).strip()
-
-            url = ""
-
-            if link_element is not None:
-                url = (
-                    link_element.text or ""
-                ).strip()
-
-            snippet = ""
-
-            if description_element is not None:
-                snippet = (
-                    description_element.text or ""
-                ).strip()
-
-            pub_date = ""
-
-            if pubdate_element is not None:
-                pub_date = (
-                    pubdate_element.text or ""
-                ).strip()
-
-            source_name = ""
-
-            if source_element is not None:
-                source_name = (
-                    source_element.text or ""
-                ).strip()
 
             if not title or not url:
                 continue
 
-            # Remove HTML from RSS description.
-            snippet = re.sub(
-                r"<[^>]+>",
-                " ",
-                snippet
-            )
+            normalized_url = url.rstrip("/").lower()
+            normalized_title = re.sub(r"\s+", " ", title.lower())
 
-            snippet = (
-                snippet
-                .replace(
-                    "&nbsp;",
-                    " "
-                )
-            )
-
-            snippet = re.sub(
-                r"\s+",
-                " ",
-                snippet
-            ).strip()
-
-            url = _clean_search_url(
-                url
-            )
-
-            if not url:
+            if normalized_url in seen_urls or normalized_title in seen_titles:
                 continue
 
-            normalized_url = (
-                url.rstrip("/")
-                .lower()
-            )
+            seen_urls.add(normalized_url)
+            seen_titles.add(normalized_title)
 
-            normalized_title = re.sub(
-                r"\s+",
-                " ",
-                title.lower()
-            )
-
-            if normalized_url in seen_urls:
-                continue
-
-            if normalized_title in seen_titles:
-                continue
-
-            seen_urls.add(
-                normalized_url
-            )
-
-            seen_titles.add(
-                normalized_title
-            )
-
-            domain = _search_domain(
-                url
-            )
-
-            source_text = source_name
-
-            if (
-                source_element is not None
-                and source_element.get("url")
-            ):
-                source_domain = _search_domain(
-                    source_element.get("url")
-                )
-
-                if source_domain:
-                    domain = source_domain
-
-            if not source_text:
-                source_text = domain
-
-            full_snippet = snippet
-
-            if pub_date:
-                if full_snippet:
-                    full_snippet += (
-                        f" | Published: {pub_date}"
-                    )
-                else:
-                    full_snippet = (
-                        f"Published: {pub_date}"
-                    )
+            # RSS descriptions can contain simple HTML markup.
+            snippet = re.sub(r"<[^>]+>", " ", description)
+            snippet = re.sub(r"\s+", " ", snippet).strip()
 
             results.append({
-                "title":
-                title[:300],
-
-                "url":
-                url,
-
-                "domain":
-                source_text[:150],
-
-                "snippet":
-                full_snippet[:1200]
+                "title": title[:300],
+                "url": url,
+                "domain": _search_domain(url),
+                "snippet": snippet[:800],
+                "source": source_name[:200],
+                "published": pub_date[:100]
             })
 
             if len(results) >= max_results:
@@ -1482,11 +1130,7 @@ def web_search(
             len(results)
         )
 
-        for index, result in enumerate(
-            results,
-            start=1
-        ):
-
+        for index, result in enumerate(results, start=1):
             print(
                 f"  SOURCE {index}: "
                 f"{result['domain']} | "
@@ -1504,6 +1148,7 @@ def web_search(
 
         return []
 
+
 def format_web_results(results):
 
     if not results:
@@ -1516,111 +1161,56 @@ def format_web_results(results):
         start=1
     ):
 
+        source_line = result.get("source", "")
+        published_line = result.get("published", "")
+
         lines.append(
-            f"{index}. "
-            f"{result['title']}\n"
-            f"Source: {result.get('domain', '')}\n"
+            f"{index}. {result['title']}\n"
+            f"Source: {source_line or result.get('domain', '')}\n"
+            f"Published: {published_line}\n"
             f"URL: {result['url']}\n"
             f"{result['snippet']}"
         )
 
-    return "\n\n".join(
-        lines
-    )
+    return "\n\n".join(lines)
 
 
-def build_smart_search_query(
-    message,
-    history
-):
+def build_smart_search_query(message, history):
+    """Build a cleaner search query using the current message and recent context."""
+    current = re.sub(r"\s+", " ", str(message).strip())
 
     current = re.sub(
-        r"\s+",
-        " ",
-        str(message).strip()
-    )
-
-    current = re.sub(
-        r"^(please\s+|can you\s+|could you\s+|"
-        r"tell me\s+|mujhe\s+|zara\s+|batao\s+)",
+        r"^(please\s+|can you\s+|could you\s+|tell me\s+|mujhe\s+|zara\s+|batao\s+)",
         "",
         current,
         flags=re.IGNORECASE
     ).strip()
 
     context_parts = []
-
-    if isinstance(
-        history,
-        list
-    ):
-
+    if isinstance(history, list):
         for msg in history[-8:]:
-
-            if not isinstance(
-                msg,
-                dict
-            ):
+            if not isinstance(msg, dict):
                 continue
+            role = str(msg.get("role", "")).lower()
+            content = str(msg.get("content", "")).strip()
+            if role == "user" and content:
+                context_parts.append(content)
 
-            role = str(
-                msg.get(
-                    "role",
-                    ""
-                )
-            ).lower()
+    followup = bool(re.match(
+        r"^(and|also|what about|how about|aur|iske|ispe|uska|uske|ye|yeh|that|this|same|why|when|where|who|how)\b",
+        current,
+        re.IGNORECASE
+    ))
 
-            content = str(
-                msg.get(
-                    "content",
-                    ""
-                )
-            ).strip()
-
-            if (
-                role == "user"
-                and content
-            ):
-
-                context_parts.append(
-                    content
-                )
-
-    followup = bool(
-        re.match(
-            r"^(and|also|what about|how about|"
-            r"aur|iske|ispe|uska|uske|ye|yeh|"
-            r"that|this|same|why|when|where|who|how)\b",
-            current,
-            re.IGNORECASE
-        )
-    )
-
-    if (
-        followup
-        and context_parts
-    ):
-
-        query = (
-            f"{context_parts[-1]} "
-            f"{current}"
-        )
-
+    if followup and context_parts:
+        query = f"{context_parts[-1]} {current}"
     else:
-
         query = current
 
-    query = re.sub(
-        r"\s+",
-        " ",
-        query
-    ).strip()
-
+    query = re.sub(r"\s+", " ", query).strip()
     return query[:500]
 
 
-# ==========================================
-# GEMINI GENERATION HELPER
 # ==========================================
 
 def generate_ai_reply(
@@ -1631,6 +1221,8 @@ def generate_ai_reply(
 
     last_error = None
 
+    # Web search is fetched independently and already included in the prompt.
+    # Do not enable Gemini Search grounding here.
     models_to_try = [
         MODEL,
         FALLBACK_MODEL
@@ -1643,15 +1235,11 @@ def generate_ai_reply(
             try:
 
                 print(
-                    f"Trying Gemini model: "
-                    f"{current_model} "
+                    f"Trying Gemini model: {current_model} "
                     f"(attempt {attempt + 1})"
                 )
 
-                # IMAGE INPUT
-
                 if image_data:
-
                     image_part = types.Part.from_bytes(
                         data=image_data["bytes"],
                         mime_type=image_data["mime_type"]
@@ -1665,94 +1253,23 @@ def generate_ai_reply(
                     print(
                         "GEMINI IMAGE INPUT: READY",
                         image_data["mime_type"],
-                        len(
-                            image_data["bytes"]
-                        ),
+                        len(image_data["bytes"]),
                         "bytes"
                     )
-
                 else:
-
                     contents = prompt
-
-                # GOOGLE SEARCH GROUNDING
-
-                config = None
-
-                if use_web_search:
-
-                    print(
-                        "GEMINI GOOGLE SEARCH: ENABLED"
-                    )
-
-                    config = (
-                        types.GenerateContentConfig(
-                            tools=[
-                                types.Tool(
-                                    google_search=
-                                    types.GoogleSearch()
-                                )
-                            ]
-                        )
-                    )
 
                 response = client.models.generate_content(
                     model=current_model,
-                    contents=contents,
-                    config=config
+                    contents=contents
                 )
 
-                if (
-                    response
-                    and response.text
-                ):
+                if response and response.text:
 
                     if use_web_search:
-
-                        grounding = None
-
-                        try:
-
-                            grounding = (
-                                response
-                                .candidates[0]
-                                .grounding_metadata
-                                if response.candidates
-                                else None
-                            )
-
-                        except Exception:
-
-                            grounding = None
-
-                        if grounding:
-
-                            queries = getattr(
-                                grounding,
-                                "web_search_queries",
-                                None
-                            ) or []
-
-                            chunks = getattr(
-                                grounding,
-                                "grounding_chunks",
-                                None
-                            ) or []
-
-                            print(
-                                "GEMINI GOOGLE SEARCH: "
-                                "SUCCESS | "
-                                f"queries={len(queries)} "
-                                f"sources={len(chunks)}"
-                            )
-
-                        else:
-
-                            print(
-                                "GEMINI GOOGLE SEARCH: "
-                                "RESPONSE WITHOUT "
-                                "GROUNDING METADATA"
-                            )
+                        print(
+                            "WEB RESULTS SENT TO GEMINI: SUCCESS"
+                        )
 
                     return response.text.strip()
 
@@ -1763,81 +1280,23 @@ def generate_ai_reply(
             except Exception as error:
 
                 last_error = error
-
-                error_text = str(
-                    error
-                )
+                error_text = str(error)
 
                 print(
-                    f"Gemini error on "
-                    f"{current_model}: "
-                    f"{error_text}"
+                    f"Gemini error on {current_model}: {error_text}"
                 )
-
-                # SEARCH QUOTA FALLBACK
-
-                if (
-                    use_web_search
-                    and "429" in error_text
-                ):
-
-                    print(
-                        "GEMINI GOOGLE SEARCH: "
-                        "QUOTA UNAVAILABLE"
-                    )
-
-                    print(
-                        "Falling back to "
-                        "normal Gemini response..."
-                    )
-
-                    try:
-
-                        fallback_response = (
-                            client.models.generate_content(
-                                model=current_model,
-                                contents=contents,
-                                config=None
-                            )
-                        )
-
-                        if (
-                            fallback_response
-                            and fallback_response.text
-                        ):
-
-                            return (
-                                fallback_response
-                                .text
-                                .strip()
-                            )
-
-                    except Exception as fallback_error:
-
-                        print(
-                            "NORMAL GEMINI "
-                            "FALLBACK ERROR:",
-                            fallback_error
-                        )
-
-                    break
 
                 if (
                     "503" in error_text
-                    or
-                    "UNAVAILABLE" in error_text
-                    or
-                    "429" in error_text
+                    or "UNAVAILABLE" in error_text
+                    or "429" in error_text
                 ):
-
                     time.sleep(2)
-
                     continue
 
                 break
 
     if last_error:
-
         raise last_error
 
     raise Exception(
@@ -1846,179 +1305,248 @@ def generate_ai_reply(
 
 
 # ==========================================
-# IMAGE EDITING
-# ==========================================
 
-def is_image_edit_request(
-    message
-):
-
-    text = re.sub(
-        r"\s+",
-        " ",
-        str(message or "").strip().lower()
-    )
-
+def is_image_edit_request(message):
+    """Detect requests that ask to modify an attached image."""
+    text = re.sub(r"\s+", " ", str(message or "").strip().lower())
     if not text:
         return False
 
     edit_patterns = [
-
-        r"\b(change|modify|edit|alter|replace|remove|"
-        r"add|make|turn|convert|transform)\b.*\b("
-        r"background|color|colour|object|person|sky|"
-        r"hair|dress|shirt|wall)\b",
-
-        r"\b(background|bg)\s+"
-        r"(?:ko|to|into|mein|me)\b",
-
-        r"\b(remove|delete|erase)\b.*\b("
-        r"from|image|photo|picture)\b",
-
-        r"\b(add|put|insert)\b.*\b("
-        r"to|in|on|the image|the photo|the picture)\b",
-
+        r"\b(change|modify|edit|alter|replace|remove|add|make|turn|convert|transform)\b.*\b(background|color|colour|object|person|sky|hair|dress|shirt|shirt|wall)\b",
+        r"\b(background|bg)\s+(?:ko|to|into|mein|me)\b",
+        r"\b(remove|delete|erase)\b.*\b(from|image|photo|picture)\b",
+        r"\b(add|put|insert)\b.*\b(to|in|on|the image|the photo|the picture)\b",
         r"\bmake\s+the\s+background\b",
-
-        r"\bbackground\s+("
-        r"blue|red|green|black|white|yellow|pink|"
-        r"purple|orange|grey|gray)\b",
-
-        r"\b("
-        r"blue|red|green|black|white|yellow|pink|"
-        r"purple|orange|grey|gray"
-        r")\s+background\b",
-
+        r"\bbackground\s+(?:blue|red|green|black|white|yellow|pink|purple|orange|grey|gray)\b",
+        r"\b(?:blue|red|green|black|white|yellow|pink|purple|orange|grey|gray)\s+background\b",
         r"\bchange\s+.*\bcolor\b",
-
         r"\bbackground\s+color\b",
-
-        r"\bbackground\s+colour\b"
+        r"\bbackground\s+colour\b",
     ]
 
-    return any(
-        re.search(
-            pattern,
-            text,
-            re.IGNORECASE
-        )
-        for pattern in edit_patterns
-    )
+    return any(re.search(pattern, text, re.IGNORECASE) for pattern in edit_patterns)
 
 
-def generate_edited_image(
-    image_data,
-    edit_prompt
-):
+def generate_edited_image(image_data, edit_prompt):
+    """Edit an attached image using Gemini 3.1 Flash Image."""
+    if not image_data or not image_data.get("bytes"):
+        raise ValueError("Image attachment is required for image editing.")
 
-    if (
-        not image_data
-        or not image_data.get("bytes")
-    ):
-
-        raise ValueError(
-            "Image attachment is required "
-            "for image editing."
-        )
-
-    encoded_image = base64.b64encode(
-        image_data["bytes"]
-    ).decode(
-        "utf-8"
-    )
+    encoded_image = base64.b64encode(image_data["bytes"]).decode("utf-8")
 
     prompt = (
-        "Edit the provided image according to "
-        "the user's request. "
-        "Preserve the main subject, composition, "
-        "proportions, and important details "
-        "unless the user explicitly asks to "
-        "change them. Make only the requested edit "
-        "and keep the result natural and high quality."
-        "\n\n"
+        "Edit the provided image according to the user's request. "
+        "Preserve the main subject, composition, proportions, and important details "
+        "unless the user explicitly asks to change them. Make only the requested edit "
+        "and keep the result natural and high quality.\n\n"
         f"User request: {edit_prompt}"
     )
 
-    print(
-        "IMAGE EDIT REQUEST:",
-        edit_prompt
-    )
-
-    print(
-        "IMAGE EDIT MODEL: "
-        "gemini-3.1-flash-image"
-    )
+    print("IMAGE EDIT REQUEST:", edit_prompt)
+    print("IMAGE EDIT MODEL: gemini-3.1-flash-image")
 
     interaction = client.interactions.create(
         model="gemini-3.1-flash-image",
         input=[
+            {"type": "text", "text": prompt},
             {
-                "type":
-                "text",
-                "text":
-                prompt
+                "type": "image",
+                "data": encoded_image,
+                "mime_type": image_data["mime_type"],
             },
-            {
-                "type":
-                "image",
-                "data":
-                encoded_image,
-                "mime_type":
-                image_data["mime_type"]
-            }
         ],
         response_format={
-            "type":
-            "image",
-            "mime_type":
-            "image/jpeg"
-        }
+            "type": "image",
+            "mime_type": "image/jpeg",
+        },
     )
 
-    output_image = getattr(
-        interaction,
-        "output_image",
-        None
-    )
-
-    if (
-        output_image is None
-        or not getattr(
-            output_image,
-            "data",
-            None
-        )
-    ):
-
-        raise Exception(
-            "Gemini image model ne "
-            "edited image return nahi ki."
-        )
+    output_image = getattr(interaction, "output_image", None)
+    if output_image is None or not getattr(output_image, "data", None):
+        raise Exception("Gemini image model ne edited image return nahi ki.")
 
     output_data = output_image.data
-
-    if isinstance(
-        output_data,
-        bytes
-    ):
-
-        output_data = base64.b64encode(
-            output_data
-        ).decode(
-            "utf-8"
-        )
+    if isinstance(output_data, bytes):
+        output_data = base64.b64encode(output_data).decode("utf-8")
 
     return {
-        "data":
-        output_data,
-
-        "mime_type":
-        getattr(
-            output_image,
-            "mime_type",
-            None
-        ) or "image/png"
+        "data": output_data,
+        "mime_type": getattr(output_image, "mime_type", None) or "image/png",
     }
+
+
+# ==========================================
+# FILE / DOCUMENT EXTRACTION
+# ==========================================
+
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_DOCUMENT_CHARS = 60000
+
+SUPPORTED_DOCUMENT_EXTENSIONS = {
+    ".txt",
+    ".md",
+    ".csv",
+    ".pdf",
+    ".docx",
+    ".xlsx",
+}
+
+
+def _truncate_document_text(text):
+
+    text = str(text or "").strip()
+
+    if len(text) <= MAX_DOCUMENT_CHARS:
+        return text
+
+    return (
+        text[:MAX_DOCUMENT_CHARS]
+        + "\n\n[Document text truncated for processing.]"
+    )
+
+
+def extract_uploaded_document(file_name, mime_type, file_bytes):
+    """Extract useful text from supported document formats."""
+
+    file_name = str(file_name or "file").strip()
+    mime_type = str(mime_type or "").strip().lower()
+    extension = os.path.splitext(file_name)[1].lower()
+
+    if not file_bytes:
+        raise ValueError("Uploaded file is empty.")
+
+    if len(file_bytes) > MAX_UPLOAD_BYTES:
+        raise ValueError("File must be smaller than 10 MB.")
+
+    # Plain text / Markdown / CSV
+    if (
+        extension in {".txt", ".md", ".csv"}
+        or mime_type.startswith("text/")
+    ):
+        try:
+            text = file_bytes.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            text = file_bytes.decode("utf-8", errors="replace")
+
+        if extension == ".csv" or "csv" in mime_type:
+            try:
+                rows = list(csv.reader(StringIO(text)))
+                lines = ["\t".join(row) for row in rows]
+                text = "\n".join(lines)
+            except Exception:
+                pass
+
+        return _truncate_document_text(text)
+
+    # PDF
+    if extension == ".pdf" or mime_type == "application/pdf":
+        if PdfReader is None:
+            raise RuntimeError(
+                "PDF support is not installed. Run: pip install pypdf"
+            )
+
+        reader = PdfReader(BytesIO(file_bytes))
+        pages = []
+
+        for page_number, page in enumerate(reader.pages, start=1):
+            try:
+                page_text = page.extract_text() or ""
+            except Exception as error:
+                print(
+                    f"PDF PAGE {page_number} EXTRACTION ERROR:",
+                    repr(error)
+                )
+                page_text = ""
+
+            if page_text.strip():
+                pages.append(
+                    f"[Page {page_number}]\n{page_text.strip()}"
+                )
+
+            current = "\n\n".join(pages)
+            if len(current) >= MAX_DOCUMENT_CHARS:
+                break
+
+        return _truncate_document_text(
+            "\n\n".join(pages)
+        )
+
+    # DOCX
+    if (
+        extension == ".docx"
+        or mime_type
+        == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ):
+        if Document is None:
+            raise RuntimeError(
+                "DOCX support is not installed. Run: pip install python-docx"
+            )
+
+        document = Document(BytesIO(file_bytes))
+        parts = []
+
+        for paragraph in document.paragraphs:
+            text = paragraph.text.strip()
+            if text:
+                parts.append(text)
+
+        # Include table contents too.
+        for table in document.tables:
+            for row in table.rows:
+                values = [cell.text.strip() for cell in row.cells]
+                parts.append("\t".join(values))
+
+        return _truncate_document_text(
+            "\n".join(parts)
+        )
+
+    # XLSX
+    if extension == ".xlsx":
+        if load_workbook is None:
+            raise RuntimeError(
+                "XLSX support is not installed. Run: pip install openpyxl"
+            )
+
+        workbook = load_workbook(
+            filename=BytesIO(file_bytes),
+            read_only=True,
+            data_only=True
+        )
+
+        try:
+            parts = []
+
+            for worksheet in workbook.worksheets:
+                parts.append(
+                    f"[Sheet: {worksheet.title}]"
+                )
+
+                for row in worksheet.iter_rows(values_only=True):
+                    values = [
+                        "" if value is None else str(value)
+                        for value in row
+                    ]
+
+                    if any(value.strip() for value in values):
+                        parts.append("\t".join(values))
+
+                    if len("\n".join(parts)) >= MAX_DOCUMENT_CHARS:
+                        break
+
+                if len("\n".join(parts)) >= MAX_DOCUMENT_CHARS:
+                    break
+
+            return _truncate_document_text(
+                "\n".join(parts)
+            )
+
+        finally:
+            workbook.close()
+
+    raise ValueError(
+        "Unsupported file type. Supported files: PDF, TXT, MD, CSV, DOCX, XLSX and images."
+    )
 
 
 # ==========================================
@@ -2052,10 +1580,7 @@ def chat():
             silent=True
         )
 
-        if (
-            not data
-            or "message" not in data
-        ):
+        if not data or "message" not in data:
 
             return jsonify({
                 "error":
@@ -2081,218 +1606,193 @@ def chat():
                 "Maximum 5000 characters allowed."
             }), 400
 
+        response_style = str(
+            data.get("responseStyle", "balanced")
+        ).strip().lower()
+
+        if response_style not in (
+            "concise",
+            "balanced",
+            "detailed"
+        ):
+            response_style = "balanced"
+
         # ======================================
-        # IMAGE ATTACHMENT
+        # FILE / IMAGE ATTACHMENT
         # ======================================
 
         image_data = None
+        document_text = ""
+        uploaded_file_name = ""
+        uploaded_file_mime = ""
 
-        image_payload = data.get(
-            "image"
+        image_payload = data.get("image")
+        file_payload = data.get("file")
+
+        attachment_payload = (
+            image_payload
+            if image_payload
+            else file_payload
         )
 
-        if image_payload:
+        if attachment_payload:
 
-            if not isinstance(
-                image_payload,
-                dict
-            ):
-
+            if not isinstance(attachment_payload, dict):
                 return jsonify({
-                    "error":
-                    "Invalid image attachment"
+                    "error": "Invalid file attachment"
                 }), 400
 
-            mime_type = str(
-                image_payload.get(
+            import base64
+
+            uploaded_file_name = str(
+                attachment_payload.get(
+                    "name",
+                    "file"
+                )
+            ).strip()
+
+            uploaded_file_mime = str(
+                attachment_payload.get(
                     "mimeType",
                     ""
                 )
             ).strip().lower()
 
             data_url = str(
-                image_payload.get(
+                attachment_payload.get(
                     "dataUrl",
                     ""
                 )
             ).strip()
 
-            if not mime_type.startswith(
-                "image/"
-            ):
-
-                return jsonify({
-                    "error":
-                    "Only image attachments "
-                    "are supported right now."
-                }), 400
-
             if (
-                not data_url.startswith(
-                    "data:"
-                )
-                or
-                ";base64," not in data_url
+                not data_url.startswith("data:")
+                or ";base64," not in data_url
             ):
-
                 return jsonify({
-                    "error":
-                    "Invalid image data."
+                    "error": "Invalid file data."
                 }), 400
 
             try:
-
                 encoded = data_url.split(
                     ";base64,",
                     1
                 )[1]
 
-                image_bytes = base64.b64decode(
+                file_bytes = base64.b64decode(
                     encoded,
                     validate=True
                 )
 
             except Exception:
-
                 return jsonify({
-                    "error":
-                    "Image data could not be read."
+                    "error": "File data could not be read."
                 }), 400
 
-            if not image_bytes:
-
+            if not file_bytes:
                 return jsonify({
-                    "error":
-                    "Image is empty."
+                    "error": "Uploaded file is empty."
                 }), 400
 
-            if len(
-                image_bytes
-            ) > 8 * 1024 * 1024:
-
+            if len(file_bytes) > MAX_UPLOAD_BYTES:
                 return jsonify({
-                    "error":
-                    "Image must be smaller "
-                    "than 8 MB."
+                    "error": "File must be smaller than 10 MB."
                 }), 400
-
-            image_data = {
-                "bytes":
-                image_bytes,
-
-                "mime_type":
-                mime_type
-            }
 
             print(
-                "IMAGE ATTACHMENT RECEIVED:",
-                image_payload.get(
-                    "name",
-                    "image"
-                ),
-                mime_type,
-                len(
-                    image_bytes
-                ),
+                "FILE ATTACHMENT RECEIVED:",
+                uploaded_file_name,
+                uploaded_file_mime,
+                len(file_bytes),
                 "bytes"
             )
+
+            if uploaded_file_mime.startswith("image/"):
+
+                if len(file_bytes) > 8 * 1024 * 1024:
+                    return jsonify({
+                        "error": "Image must be smaller than 8 MB."
+                    }), 400
+
+                image_data = {
+                    "bytes": file_bytes,
+                    "mime_type": uploaded_file_mime
+                }
+
+            else:
+
+                try:
+                    document_text = extract_uploaded_document(
+                        uploaded_file_name,
+                        uploaded_file_mime,
+                        file_bytes
+                    )
+                except Exception as error:
+                    print(
+                        "DOCUMENT EXTRACTION ERROR:",
+                        repr(error)
+                    )
+                    return jsonify({
+                        "error": str(error)
+                    }), 400
+
+                if not document_text.strip():
+                    return jsonify({
+                        "error": "Document mein readable text nahi mila."
+                    }), 400
 
         # ======================================
         # IMAGE EDITING
         # ======================================
 
-        if (
-            image_data
-            and is_image_edit_request(
-                message
-            )
-        ):
-
+        if image_data and is_image_edit_request(message):
             edited_image = generate_edited_image(
                 image_data,
                 message
             )
 
             def image_edit_stream():
-
                 yield (
                     "data: "
-                    +
-                    json_module.dumps({
-                        "type":
-                        "image",
-
-                        "mimeType":
-                        edited_image[
-                            "mime_type"
-                        ],
-
-                        "data":
-                        edited_image[
-                            "data"
-                        ]
+                    + json_module.dumps({
+                        "type": "image",
+                        "mimeType": edited_image["mime_type"],
+                        "data": edited_image["data"],
                     })
-                    +
-                    "\n\n"
+                    + "\n\n"
                 )
 
                 yield (
                     "data: "
-                    +
-                    json_module.dumps({
-                        "type":
-                        "chunk",
-
-                        "text":
-                        "Image edit complete."
+                    + json_module.dumps({
+                        "type": "chunk",
+                        "text": "Image edit complete."
                     })
-                    +
-                    "\n\n"
+                    + "\n\n"
                 )
 
                 yield (
                     "data: "
-                    +
-                    json_module.dumps({
-                        "type":
-                        "done"
+                    + json_module.dumps({
+                        "type": "done"
                     })
-                    +
-                    "\n\n"
+                    + "\n\n"
                 )
 
             return Response(
-                stream_with_context(
-                    image_edit_stream()
-                ),
+                stream_with_context(image_edit_stream()),
                 mimetype="text/event-stream",
                 headers={
-                    "Cache-Control":
-                    "no-cache",
-
-                    "X-Accel-Buffering":
-                    "no",
-
-                    "Connection":
-                    "keep-alive"
+                    "Cache-Control": "no-cache",
+                    "X-Accel-Buffering": "no",
+                    "Connection": "keep-alive"
                 }
             )
-
-        # ======================================
-        # FRONTEND HISTORY
-        # ======================================
 
         history_from_frontend = data.get(
             "history",
             []
         )
-
-        if not isinstance(
-            history_from_frontend,
-            list
-        ):
-
-            history_from_frontend = []
 
         # ======================================
         # WEB SEARCH DETECTION
@@ -2304,6 +1804,7 @@ def chat():
 
         search_triggers = [
 
+            # Time-sensitive
             "latest",
             "current",
             "today",
@@ -2316,6 +1817,7 @@ def chat():
             "as of now",
             "at the moment",
 
+            # News
             "news",
             "breaking news",
             "what happened",
@@ -2323,6 +1825,7 @@ def chat():
             "what is happening",
             "happening now",
 
+            # Current status
             "who is the current",
             "who is currently",
             "current pm",
@@ -2331,6 +1834,7 @@ def chat():
             "current minister",
             "current ceo",
 
+            # Prices
             "current price",
             "latest price",
             "price today",
@@ -2339,6 +1843,7 @@ def chat():
             "bitcoin price",
             "crypto price",
 
+            # Updates
             "latest update",
             "latest updates",
             "current update",
@@ -2346,11 +1851,13 @@ def chat():
             "recent update",
             "recent updates",
 
+            # Time periods
             "this week",
             "this month",
             "this year",
             "this weekend",
 
+            # Live
             "live score",
             "live news",
             "live update",
@@ -2360,31 +1867,18 @@ def chat():
         hindi_search_patterns = [
 
             r"\babhi\s+(?:kya|ka|ki|ke|chal)\b",
-
             r"\babhi\s+ka\s+news\b",
-
             r"\baaj\s+(?:ka|ki|ke)\b",
-
             r"\baaj\s+ki\s+news\b",
-
             r"\baaj\s+ka\s+news\b",
-
             r"\btaza\s+(?:khabar|news)\b",
-
             r"\btaaza\s+(?:khabar|news)\b",
-
             r"\bhaal\s+hi\s+mein\b",
-
             r"\bfilhaal\b",
-
             r"\bcurrently\b",
-
             r"\biss\s+samay\b",
-
             r"\bis\s+samay\b",
-
             r"\babhi\s+ka\s+update\b",
-
             r"\blatest\s+update\b"
         ]
 
@@ -2410,43 +1904,53 @@ def chat():
 
                     break
 
-        # ======================================
-        # WEB SEARCH
-        # ======================================
-
         web_context = ""
 
         if web_search_needed:
+
+            smart_query = build_smart_search_query(
+                message,
+                history_from_frontend
+            )
 
             print(
                 "WEB SEARCH REQUEST DETECTED:",
                 message
             )
 
-            search_query = build_smart_search_query(
-                message,
-                history_from_frontend
-            )
-
             print(
-                "WEB SEARCH QUERY:",
-                search_query
+                "SMART SEARCH QUERY:",
+                smart_query
             )
 
-            web_results = web_search(
-                search_query,
+            search_results = web_search(
+                smart_query,
                 max_results=5
             )
 
+            if not search_results and smart_query != message:
+                print(
+                    "SMART SEARCH EMPTY - RETRYING EXACT QUERY"
+                )
+                search_results = web_search(
+                    message,
+                    max_results=5
+                )
+
             web_context = format_web_results(
-                web_results
+                search_results
             )
 
-            print(
-                "WEB SEARCH CONTEXT READY:",
-                len(web_results),
-                "results"
-            )
+            if web_context:
+                print(
+                    "WEB SEARCH CONTEXT READY:"
+                    , len(search_results),
+                    "sources"
+                )
+            else:
+                print(
+                    "WEB SEARCH CONTEXT EMPTY"
+                )
 
         # ======================================
         # WEATHER DETECTION
@@ -2533,7 +2037,6 @@ def chat():
                         json_module.dumps({
                             "type":
                             "chunk",
-
                             "text":
                             chunk
                         })
@@ -2564,10 +2067,8 @@ def chat():
                 headers={
                     "Cache-Control":
                     "no-cache",
-
                     "X-Accel-Buffering":
                     "no",
-
                     "Connection":
                     "keep-alive"
                 }
@@ -2606,7 +2107,6 @@ def chat():
                         json_module.dumps({
                             "type":
                             "chunk",
-
                             "text":
                             chunk
                         })
@@ -2637,10 +2137,8 @@ def chat():
                 headers={
                     "Cache-Control":
                     "no-cache",
-
                     "X-Accel-Buffering":
                     "no",
-
                     "Connection":
                     "keep-alive"
                 }
@@ -2650,6 +2148,9 @@ def chat():
         # MEMORY
         # ======================================
 
+        # detect_memory() saves the detected memory itself and always
+        # returns a (key, value) tuple for compatibility. Do not unpack
+        # it here because memory may already have been saved.
         detect_memory(
             message,
             user_memory
@@ -2675,11 +2176,15 @@ def chat():
         # SYSTEM PROMPT
         # ======================================
 
+        ist = timezone(timedelta(hours=5, minutes=30))
+        current_date_ist = datetime.now(ist).strftime("%d %B %Y")
+
         system_prompt = f"""
 You are Normal Chat, a helpful AI assistant.
 
-Rules:
+Current date in India: {current_date_ist}
 
+Rules:
 - Answer the user's question directly and prioritize the exact request.
 - Match the user's language and style (English, Hindi, or Hinglish).
 - Keep simple questions short and easy to scan.
@@ -2695,8 +2200,10 @@ Rules:
 - Do not unnecessarily restate the user's question.
 - For code requests, prefer complete, directly usable code when appropriate and explain only the important parts.
 
-User information:
+Response style:
+{("Concise: keep the answer brief and focused. Use only the details needed to answer the request." if response_style == "concise" else "Detailed: give a thorough, well-structured answer with useful explanations, examples, and steps when appropriate." if response_style == "detailed" else "Balanced: give a clear answer with enough explanation to be useful without unnecessary length.")}
 
+User information:
 {memory_text}
 """
 
@@ -2704,60 +2211,46 @@ User information:
         # CONVERSATION
         # ======================================
 
+        # ======================================
+        # SMART CONVERSATION CONTEXT
+        # ======================================
+
+        # Keep recent turns together instead of blindly cutting the text
+        # in the middle of a message. This gives Gemini cleaner context.
         raw_history = (
             history_from_frontend
-            if isinstance(
-                history_from_frontend,
-                list
-            )
+            if isinstance(history_from_frontend, list)
             else []
         )
 
-        previous_messages = (
-            raw_history[:-1]
-        )
+        # Current message is normally the final history item, so exclude it.
+        previous_messages = raw_history[:-1]
 
-        previous_messages = (
-            previous_messages[-16:]
-        )
+        # Keep the latest 16 messages (8 user/assistant turns maximum).
+        previous_messages = previous_messages[-16:]
 
         conversation_parts = []
 
         for msg in previous_messages:
-
-            if not isinstance(
-                msg,
-                dict
-            ):
-
+            if not isinstance(msg, dict):
                 continue
 
             role = str(
-                msg.get(
-                    "role",
-                    ""
-                )
+                msg.get("role", "")
             ).strip().lower()
 
             content = str(
-                msg.get(
-                    "content",
-                    ""
-                )
+                msg.get("content", "")
             ).strip()
 
             if not content:
                 continue
 
+            # Keep individual messages bounded.
             if len(content) > 2500:
-
-                content = (
-                    content[:2500]
-                    + "..."
-                )
+                content = content[:2500] + "..."
 
             if role == "user":
-
                 conversation_parts.append(
                     f"User: {content}"
                 )
@@ -2767,7 +2260,6 @@ User information:
                 "bot",
                 "model"
             ):
-
                 conversation_parts.append(
                     f"Assistant: {content}"
                 )
@@ -2776,21 +2268,18 @@ User information:
             conversation_parts
         )
 
-        if len(
-            conversation_text
-        ) > 14000:
+        # Never let conversation context dominate the current question.
+        if len(conversation_text) > 14000:
+            conversation_text = conversation_text[-14000:]
 
-            conversation_text = (
-                conversation_text[-14000:]
-            )
-
+        # Extra instructions improve follow-up understanding.
+        # The model should resolve words such as 'it', 'that', 'this',
+        # 'above', and 'same one' from the most recent relevant context.
         conversation_rules = ""
 
         if conversation_text:
-
             conversation_rules = """
 Conversation continuity rules:
-
 - Treat the recent conversation as active context, not as a new question.
 - If the user asks a follow-up such as 'why?', 'how?', 'what about it?',
   'that one', 'same thing', or 'explain more', resolve the reference from
@@ -2811,34 +2300,30 @@ Conversation continuity rules:
 
 If web search results are provided below:
 
-- Use them when relevant.
-- Prefer them for current or recent facts.
+- Use them as the primary source for current, recent, or time-sensitive facts.
+- For requests containing "today", "aaj", "latest", "current", or similar wording, do not answer from model memory.
+- Use the publication dates in the search results and never replace a current date with an older date.
+- The current India date is {current_date_ist}.
+- If the search results are unavailable or clearly stale, say that live search did not return a reliable current result instead of inventing one.
 - Do not invent facts.
 - Do not dump raw search results.
 - Answer naturally and directly.
 
 Web Search Results:
-
 {web_context}
 
 {conversation_rules}
-
 Recent Conversation:
-
 {conversation_text}
 
 Current User Message:
-
 {message}
 
 Image Attachment:
+{("An image is attached. Inspect the image and answer the user's request using it." if image_data else "No image is attached.")}
 
-{(
-    "An image is attached. Inspect the image and answer the user's request using it."
-    if image_data
-    else
-    "No image is attached."
-)}
+Document Attachment:
+{(f"A document named {uploaded_file_name} is attached. Use the extracted document text below to answer the user's request.\n\n{document_text}" if document_text else "No document is attached.")}
 """
 
         # ======================================
@@ -2846,13 +2331,10 @@ Image Attachment:
         # ======================================
 
         reply = generate_ai_reply(
-    prompt,
-    use_web_search=(
-        web_search_needed
-        and not web_context
-    ),
-    image_data=image_data
-)
+            prompt,
+            use_web_search=web_search_needed,
+            image_data=image_data
+        )
 
         if not reply:
 
@@ -2886,7 +2368,6 @@ Image Attachment:
                     json_module.dumps({
                         "type":
                         "chunk",
-
                         "text":
                         chunk
                     })
@@ -2917,10 +2398,8 @@ Image Attachment:
             headers={
                 "Cache-Control":
                 "no-cache",
-
                 "X-Accel-Buffering":
                 "no",
-
                 "Connection":
                 "keep-alive"
             }
@@ -2948,7 +2427,6 @@ Image Attachment:
         return jsonify({
             "error":
             "Internal server error",
-
             "details":
             str(chat_error)
         }), 500
@@ -3061,7 +2539,6 @@ def new_chat():
         return jsonify({
             "error":
             "Internal server error",
-
             "details":
             str(error)
         }), 500
@@ -3099,61 +2576,42 @@ def branch_conversation():
             []
         )
 
-        if (
-            not isinstance(
-                history_data,
-                list
-            )
-            or
-            not history_data
-        ):
+        if not isinstance(
+            history_data,
+            list
+        ) or not history_data:
 
             return jsonify({
                 "error":
                 "Conversation history is required"
             }), 400
 
+        # Keep the branch bounded and only retain normal
+        # user/assistant messages.
         clean_history = []
 
         for item in history_data[-32:]:
 
-            if not isinstance(
-                item,
-                dict
-            ):
-
+            if not isinstance(item, dict):
                 continue
 
             role = str(
-                item.get(
-                    "role",
-                    ""
-                )
+                item.get("role", "")
             ).strip().lower()
 
             content = str(
-                item.get(
-                    "content",
-                    ""
-                )
+                item.get("content", "")
             ).strip()
 
-            if (
-                role not in (
-                    "user",
-                    "assistant"
-                )
-                or not content
-            ):
-
+            if role not in (
+                "user",
+                "assistant"
+            ) or not content:
                 continue
 
             clean_history.append({
-                "role":
-                role,
-
-                "content":
-                content[:5000]
+                "role": role,
+                "content": content[:5000]
             })
 
         if not clean_history:
@@ -3171,7 +2629,6 @@ def branch_conversation():
         return jsonify({
             "message":
             "Conversation branch created",
-
             "history":
             clean_history
         })
@@ -3198,7 +2655,6 @@ def branch_conversation():
         return jsonify({
             "error":
             "Internal server error",
-
             "details":
             str(error)
         }), 500
@@ -3337,7 +2793,6 @@ def rename_history(index):
         return jsonify({
             "message":
             "Chat renamed successfully",
-
             "title":
             title
         })
@@ -3417,7 +2872,6 @@ def ensure_database():
             return jsonify({
                 "error":
                 "Database connection failed",
-
                 "details":
                 str(error)
             }), 500

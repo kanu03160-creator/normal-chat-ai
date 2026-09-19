@@ -37,8 +37,10 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 20px;
-            position: relative;
-            z-index: 10;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 3000;
         }
 
         .header h1 {
@@ -74,6 +76,19 @@
             transform: scale(0.97);
         }
 
+        .voice-mode-button.active {
+            background: #f1f1f1;
+            color: #111;
+            border-color: #f1f1f1;
+            font-weight: 600;
+        }
+
+        .voice-mode-button.listening {
+            background: #292929;
+            border-color: #666;
+            color: #fff;
+        }
+
         #loginButton {
             background: #f1f1f1;
             color: #111;
@@ -90,7 +105,10 @@
         ========================= */
 
         .chat-box {
-            height: calc(100vh - 144px);
+            position: fixed;
+            top: 72px;
+            bottom: 72px;
+            left: 0;
             width: 100%;
             overflow-y: auto;
             overflow-x: hidden;
@@ -203,6 +221,38 @@
            INPUT
         ========================= */
 
+        .quick-prompts {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 72px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            padding: 8px 20px 14px;
+            max-width: 100%;
+            margin: 0 auto;
+            z-index: 2999;
+            background: #000;
+        }
+
+        .quick-prompt {
+            background: #171717;
+            color: #eaeaea;
+            border: 1px solid #2d2d2d;
+            border-radius: 18px;
+            padding: 9px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+
+        .quick-prompt:hover {
+            background: #202020;
+            border-color: #444;
+        }
+
         .input-area {
             height: 72px;
             width: 100%;
@@ -212,6 +262,21 @@
             padding: 10px 16px;
             background: #000 !important;
             border-top: 1px solid #1f1f1f;
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            z-index: 3000;
+        }
+
+        #messageCounter {
+            position: absolute;
+            right: 112px;
+            bottom: 3px;
+            color: #666;
+            font-size: 11px;
+            line-height: 1;
+            pointer-events: none;
+            user-select: none;
         }
 
         #message {
@@ -357,6 +422,26 @@
             background: #111;
         }
 
+
+        .message-attachment-file {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            max-width: min(420px, 100%);
+            margin: 4px 0 10px 0;
+            padding: 9px 12px;
+            border: 1px solid #333;
+            border-radius: 10px;
+            background: #1d1d1d;
+            color: #ddd;
+            font-size: 13px;
+            overflow-wrap: anywhere;
+        }
+
+        .message-attachment-file-icon {
+            font-size: 17px;
+        }
+
         #selectedFile {
             display: none;
             position: absolute;
@@ -454,6 +539,23 @@
             color: #777;
             font-size: 12px;
             line-height: 1.45;
+        }
+
+        .response-style-select {
+            width: 100%;
+            height: 46px;
+            padding: 0 12px;
+            border: 1px solid #444;
+            border-radius: 9px;
+            background: #242424;
+            color: #fff;
+            outline: none;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .response-style-select:focus {
+            border-color: #666;
         }
 
         /* =========================
@@ -970,8 +1072,16 @@
                 font-size: 11px;
             }
 
+            .voice-mode-button {
+                max-width: 105px;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+
             .chat-box {
-                height: calc(100vh - 128px);
+                top: 64px;
+                bottom: 64px;
                 padding: 13px 9px;
             }
 
@@ -979,6 +1089,12 @@
                 max-width: 92%;
                 padding: 10px 12px;
                 font-size: 14px;
+            }
+
+            .quick-prompts {
+                bottom: 64px;
+                padding: 6px 9px 10px;
+                gap: 7px;
             }
 
             .input-area {
@@ -989,6 +1105,11 @@
             #message {
                 height: 48px;
                 font-size: 15px;
+            }
+
+            #messageCounter {
+                right: 83px;
+                bottom: 2px;
             }
 
             #micButton {
@@ -1093,8 +1214,25 @@
                 New Chat
             </button>
 
+            <button id="exportChatButton" type="button">
+                Export
+            </button>
+
+            <button id="copyChatButton" type="button">
+                Copy Chat
+            </button>
+
             <button id="settingsButton" type="button">
                 ⚙️
+            </button>
+
+            <button
+                id="voiceModeButton"
+                class="voice-mode-button"
+                type="button"
+                title="Hands-free Voice Mode"
+            >
+                🎧 Voice Mode: OFF
             </button>
 
             <button id="loginButton" type="button">
@@ -1109,6 +1247,14 @@
     <!-- CHAT -->
 
     <div id="chatBox" class="chat-box"></div>
+
+
+    <div id="quickPrompts" class="quick-prompts">
+        <button class="quick-prompt" type="button" data-prompt="Explain something to me simply">💡 Explain something</button>
+        <button class="quick-prompt" type="button" data-prompt="Write code for me">💻 Write code</button>
+        <button class="quick-prompt" type="button" data-prompt="Summarize this for me">📝 Summarize</button>
+        <button class="quick-prompt" type="button" data-prompt="Translate this into English">🌐 Translate</button>
+    </div>
 
 
     <!-- INPUT -->
@@ -1127,7 +1273,7 @@
                     <span class="attach-menu-icon">📎</span>
                     <span class="attach-menu-text">
                         <span class="attach-menu-title">Add photos &amp; files</span>
-                        <span class="attach-menu-subtitle">Upload from your computer</span>
+                        <span class="attach-menu-subtitle">Upload images or documents from your computer</span>
                     </span>
                 </button>
             </div>
@@ -1144,7 +1290,10 @@
             id="message"
             placeholder="Type your message..."
             autocomplete="off"
+            maxlength="5000"
         >
+
+        <span id="messageCounter">0/5000</span>
 
         <button
             id="micButton"
@@ -1252,7 +1401,7 @@
                     class="logout-button"
                     type="button"
                 >
-                    🔊 Voice: ON
+                    🔇 Voice: OFF
                 </button>
 
             </div>
@@ -1277,6 +1426,48 @@
                 </div>
 
             </div>
+
+            <div class="settings-section">
+
+                <div class="settings-label">
+                    Hands-free Voice Mode
+                </div>
+
+                <button
+                    id="voiceModeToggleButton"
+                    class="logout-button"
+                    type="button"
+                >
+                    🎧 Voice Mode: OFF
+                </button>
+
+                <div class="voice-language-hint">
+                    Automatically listens again after Normal Chat finishes speaking.
+                </div>
+
+            </div>
+
+            <div class="settings-section">
+
+                <div class="settings-label">
+                    Response Style
+                </div>
+
+                <select
+                    id="responseStyleSelect"
+                    class="response-style-select"
+                >
+                    <option value="concise">Concise</option>
+                    <option value="balanced">Balanced</option>
+                    <option value="detailed">Detailed</option>
+                </select>
+
+                <div class="voice-language-hint">
+                    Controls how short or detailed Normal Chat replies are.
+                </div>
+
+            </div>
+
 
             <div class="settings-section">
 
@@ -1365,10 +1556,61 @@
         const voiceLanguageSelect =
             document.getElementById("voiceLanguageSelect");
 
+        const voiceModeButton =
+            document.getElementById("voiceModeButton");
+
+        const voiceModeToggleButton =
+            document.getElementById("voiceModeToggleButton");
+
+        const responseStyleSelect =
+            document.getElementById("responseStyleSelect");
+
 
         let isSignupMode = false;
 
         let loggedInUsername = null;
+
+
+        /* =========================
+           RESPONSE STYLE
+        ========================= */
+
+        let responseStyle =
+            localStorage.getItem("normalChatResponseStyle") || "balanced";
+
+        function updateResponseStyleSelect() {
+
+            if (!responseStyleSelect) {
+                return;
+            }
+
+            const allowedStyles = [
+                "concise",
+                "balanced",
+                "detailed"
+            ];
+
+            if (!allowedStyles.includes(responseStyle)) {
+                responseStyle = "balanced";
+            }
+
+            responseStyleSelect.value = responseStyle;
+        }
+
+        if (responseStyleSelect) {
+            responseStyleSelect.addEventListener(
+                "change",
+                function () {
+                    responseStyle = responseStyleSelect.value;
+                    localStorage.setItem(
+                        "normalChatResponseStyle",
+                        responseStyle
+                    );
+                }
+            );
+        }
+
+        updateResponseStyleSelect();
 
 
         /* =========================
@@ -1797,6 +2039,25 @@
         const messageInput =
             document.getElementById("message");
 
+        const messageCounter =
+            document.getElementById("messageCounter");
+
+        function updateMessageCounter() {
+            const length = messageInput.value.length;
+            messageCounter.textContent = `${length}/5000`;
+
+            if (length >= 4900) {
+                messageCounter.style.color = "#aaa";
+            } else {
+                messageCounter.style.color = "#666";
+            }
+        }
+
+        messageInput.addEventListener(
+            "input",
+            updateMessageCounter
+        );
+
         const attachButton =
             document.getElementById("attachButton");
 
@@ -1814,11 +2075,16 @@
 
         let selectedAttachment = null;
 
-        let voiceEnabled =
-            localStorage.getItem("normalChatVoice") !== "off";
+        // Voice reply is OFF by default.
+        let voiceEnabled = false;
 
         let voiceLanguage =
             localStorage.getItem("normalChatVoiceLanguage") || "auto";
+
+        // Hands-free voice mode is OFF by default.
+        let voiceModeEnabled = false;
+
+        let voiceSpeaking = false;
 
 
         const sendButton =
@@ -1833,8 +2099,17 @@
         const chatBox =
             document.getElementById("chatBox");
 
+        const quickPrompts =
+            document.getElementById("quickPrompts");
+
         const newChatButton =
             document.getElementById("newChatButton");
+
+        const exportChatButton =
+            document.getElementById("exportChatButton");
+
+        const copyChatButton =
+            document.getElementById("copyChatButton");
 
         const historyButton =
             document.getElementById("historyButton");
@@ -1884,11 +2159,7 @@
 
             const source = String(text || "");
 
-            if (/[^\u0000-\u00ff][\u0900-\u097f]/.test(source)) {
-                return "hi-IN";
-            }
-
-            if (/[\u0900-\u097f]/.test(source)) {
+            if (/[\u0900-\u097F]/.test(source)) {
                 return "hi-IN";
             }
 
@@ -1930,12 +2201,134 @@
         }
 
 
+        function updateVoiceModeButtons() {
+
+            const label =
+                voiceModeEnabled
+                    ? "🎧 Voice Mode: ON"
+                    : "🎧 Voice Mode: OFF";
+
+            if (voiceModeButton) {
+
+                voiceModeButton.textContent =
+                    label;
+
+                voiceModeButton.classList.toggle(
+                    "active",
+                    voiceModeEnabled
+                );
+
+                voiceModeButton.title =
+                    voiceModeEnabled
+                        ? "Turn off Hands-free Voice Mode"
+                        : "Turn on Hands-free Voice Mode";
+            }
+
+            if (voiceModeToggleButton) {
+                voiceModeToggleButton.textContent =
+                    label;
+            }
+        }
+
+
+        function stopVoiceRecognition() {
+
+            if (!recognition) {
+                return;
+            }
+
+            try {
+                recognition.stop();
+            } catch (error) {
+                console.debug("Recognition stop:", error);
+            }
+        }
+
+
+        function stopVoiceMode() {
+
+            voiceModeEnabled = false;
+
+            localStorage.setItem(
+                "normalChatVoiceMode",
+                "off"
+            );
+
+            if (restartVoiceTimer) {
+                clearTimeout(restartVoiceTimer);
+                restartVoiceTimer = null;
+            }
+
+            stopVoiceRecognition();
+
+            if ("speechSynthesis" in window) {
+                window.speechSynthesis.cancel();
+            }
+
+            voiceSpeaking = false;
+
+            updateVoiceModeButtons();
+        }
+
+
+        function startVoiceMode() {
+
+            if (!SpeechRecognition || !micButton) {
+
+                alert(
+                    "Hands-free Voice Mode is not supported in this browser. Chrome ya Edge use karo."
+                );
+
+                return;
+            }
+
+            voiceModeEnabled = true;
+            voiceEnabled = true;
+
+            localStorage.setItem(
+                "normalChatVoiceMode",
+                "on"
+            );
+
+            localStorage.setItem(
+                "normalChatVoice",
+                "on"
+            );
+
+            updateVoiceButton();
+            updateVoiceModeButtons();
+
+            if (!isStreaming && !voiceSpeaking) {
+                startListening();
+            }
+        }
+
+
+        function toggleVoiceMode() {
+
+            if (voiceModeEnabled) {
+                stopVoiceMode();
+            } else {
+                startVoiceMode();
+            }
+        }
+
+
         /* =========================
            VOICE SETTINGS
         ========================= */
 
+        // Make sure any previously enabled browser speech is stopped.
+        if ("speechSynthesis" in window) {
+            window.speechSynthesis.cancel();
+        }
+
+        localStorage.setItem("normalChatVoice", "off");
+        localStorage.setItem("normalChatVoiceMode", "off");
+
         updateVoiceButton();
         updateVoiceLanguageSelect();
+        updateVoiceModeButtons();
 
         if (voiceToggleButton) {
 
@@ -1953,11 +2346,13 @@
 
                     updateVoiceButton();
 
-                    if (
-                        !voiceEnabled &&
-                        "speechSynthesis" in window
-                    ) {
-                        window.speechSynthesis.cancel();
+                    if (!voiceEnabled) {
+
+                        if (voiceModeEnabled) {
+                            stopVoiceMode();
+                        } else if ("speechSynthesis" in window) {
+                            window.speechSynthesis.cancel();
+                        }
                     }
                 }
             );
@@ -1982,55 +2377,42 @@
                             getSpeechRecognitionLanguage();
                     }
 
-                    if (
-                        "speechSynthesis" in window
-                    ) {
+                    if ("speechSynthesis" in window) {
                         window.speechSynthesis.cancel();
                     }
                 }
             );
         }
 
+        if (voiceModeButton) {
+            voiceModeButton.addEventListener(
+                "click",
+                toggleVoiceMode
+            );
+        }
 
-        function speakReply(text) {
-
-            if (!voiceEnabled) {
-                return;
-            }
-
-            if (!("speechSynthesis" in window)) {
-                return;
-            }
-
-            const cleanText =
-                String(text || "").trim();
-
-            if (!cleanText) {
-                return;
-            }
-
-            window.speechSynthesis.cancel();
-
-            const utterance =
-                new SpeechSynthesisUtterance(
-                    cleanText
-                );
-
-            utterance.lang =
-                getSpeechOutputLanguage(cleanText);
-
-            utterance.rate = 1;
-            utterance.pitch = 1;
-            utterance.volume = 1;
-
-            window.speechSynthesis.speak(
-                utterance
+        if (voiceModeToggleButton) {
+            voiceModeToggleButton.addEventListener(
+                "click",
+                toggleVoiceMode
             );
         }
 
 
+        function speakReply(text) {
+
+            // Voice reply is intentionally disabled.
+            if ("speechSynthesis" in window) {
+                window.speechSynthesis.cancel();
+            }
+
+            voiceSpeaking = false;
+            return Promise.resolve();
+        }
+
+
         /* =========================
-           VOICE INPUT
+           VOICE INPUT / HANDS-FREE MODE
         ========================= */
 
         const SpeechRecognition =
@@ -2039,6 +2421,59 @@
 
         let recognition = null;
         let isListening = false;
+        let restartVoiceTimer = null;
+
+        function scheduleVoiceRestart() {
+
+            if (restartVoiceTimer) {
+                clearTimeout(restartVoiceTimer);
+            }
+
+            if (!voiceModeEnabled || isStreaming || voiceSpeaking) {
+                return;
+            }
+
+            restartVoiceTimer = setTimeout(
+                function () {
+
+                    restartVoiceTimer = null;
+
+                    if (
+                        voiceModeEnabled &&
+                        !isStreaming &&
+                        !voiceSpeaking
+                    ) {
+                        startListening();
+                    }
+                },
+                350
+            );
+        }
+
+
+        function startListening() {
+
+            if (
+                !recognition ||
+                isListening ||
+                isStreaming ||
+                voiceSpeaking ||
+                !voiceModeEnabled
+            ) {
+                return;
+            }
+
+            recognition.lang =
+                getSpeechRecognitionLanguage();
+
+            try {
+                recognition.start();
+            } catch (error) {
+                console.debug("Voice start:", error);
+                scheduleVoiceRestart();
+            }
+        }
+
 
         if (SpeechRecognition && micButton) {
 
@@ -2050,24 +2485,28 @@
             recognition.lang =
                 getSpeechRecognitionLanguage();
 
+            let finalTranscript = "";
+
             recognition.onstart = function () {
 
                 isListening = true;
+                finalTranscript = "";
 
-                micButton.classList.add(
-                    "listening"
-                );
-
-                micButton.textContent =
-                    "🔴";
-
+                micButton.classList.add("listening");
+                micButton.textContent = "🔴";
                 micButton.title =
-                    "Listening...";
+                    voiceModeEnabled
+                        ? "Hands-free listening..."
+                        : "Listening...";
+
+                if (voiceModeButton) {
+                    voiceModeButton.classList.add("listening");
+                }
             };
 
             recognition.onresult = function (event) {
 
-                let transcript = "";
+                let interimTranscript = "";
 
                 for (
                     let i = event.resultIndex;
@@ -2075,12 +2514,33 @@
                     i++
                 ) {
 
-                    transcript +=
+                    const transcript =
                         event.results[i][0].transcript;
+
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + " ";
+                    } else {
+                        interimTranscript += transcript;
+                    }
                 }
 
                 messageInput.value =
-                    transcript.trim();
+                    (finalTranscript + interimTranscript).trim();
+
+                if (
+                    voiceModeEnabled &&
+                    finalTranscript.trim()
+                ) {
+
+                    const text =
+                        finalTranscript.trim();
+
+                    finalTranscript = "";
+                    messageInput.value = "";
+
+                    stopVoiceRecognition();
+                    sendMessage(text);
+                }
             };
 
             recognition.onerror = function (event) {
@@ -2090,10 +2550,15 @@
                     event.error
                 );
 
-                if (event.error === "not-allowed") {
+                if (
+                    event.error === "not-allowed" ||
+                    event.error === "service-not-allowed"
+                ) {
+
+                    stopVoiceMode();
 
                     alert(
-                        "Microphone permission allow karo, phir dobara mic dabao."
+                        "Microphone permission allow karo, phir Voice Mode dobara ON karo."
                     );
                 }
             };
@@ -2102,49 +2567,67 @@
 
                 isListening = false;
 
-                micButton.classList.remove(
-                    "listening"
-                );
-
-                micButton.textContent =
-                    "🎙️";
-
+                micButton.classList.remove("listening");
+                micButton.textContent = "🎙️";
                 micButton.title =
-                    "Voice input";
+                    voiceModeEnabled
+                        ? "Hands-free Voice Mode"
+                        : "Voice input";
+
+                if (voiceModeButton) {
+                    voiceModeButton.classList.remove("listening");
+                }
+
+                if (voiceModeEnabled) {
+                    scheduleVoiceRestart();
+                }
             };
 
             micButton.addEventListener(
                 "click",
                 function () {
 
-                    if (isStreaming) {
+                    if (voiceModeEnabled) {
+                        stopVoiceMode();
                         return;
                     }
 
-                    if (isListening) {
-                        recognition.stop();
-                        return;
-                    }
+                    voiceModeEnabled = true;
+                    voiceEnabled = true;
 
-                    recognition.lang =
-                        getSpeechRecognitionLanguage();
+                    localStorage.setItem(
+                        "normalChatVoiceMode",
+                        "on"
+                    );
 
-                    try {
-                        recognition.start();
-                    } catch (error) {
-                        console.error(
-                            "Voice start error:",
-                            error
-                        );
-                    }
+                    localStorage.setItem(
+                        "normalChatVoice",
+                        "on"
+                    );
+
+                    updateVoiceButton();
+                    updateVoiceModeButtons();
+                    startListening();
                 }
             );
+
+            if (voiceModeEnabled) {
+                scheduleVoiceRestart();
+            }
 
         } else if (micButton) {
 
             micButton.disabled = true;
             micButton.title =
                 "Voice input is not supported in this browser.";
+
+            if (voiceModeButton) {
+                voiceModeButton.disabled = true;
+            }
+
+            if (voiceModeToggleButton) {
+                voiceModeToggleButton.disabled = true;
+            }
         }
 
 
@@ -2241,6 +2724,8 @@
 
 
                 conversationHistory = [];
+
+                updateQuickPromptsVisibility();
 
 
                 localStorage.removeItem(
@@ -2414,12 +2899,30 @@
                 document.createElement("br")
             );
 
-            if (role === "user" && attachment && attachment.dataUrl) {
-                const image = document.createElement("img");
-                image.src = attachment.dataUrl;
-                image.alt = attachment.name || "Attached image";
-                image.className = "message-attachment-image";
-                div.appendChild(image);
+            if (role === "user" && attachment) {
+
+                if (attachment.dataUrl && String(attachment.mimeType || "").startsWith("image/")) {
+                    const image = document.createElement("img");
+                    image.src = attachment.dataUrl;
+                    image.alt = attachment.name || "Attached image";
+                    image.className = "message-attachment-image";
+                    div.appendChild(image);
+
+                } else if (attachment.name) {
+                    const fileChip = document.createElement("div");
+                    fileChip.className = "message-attachment-file";
+
+                    const icon = document.createElement("span");
+                    icon.className = "message-attachment-file-icon";
+                    icon.textContent = "📄";
+
+                    const fileName = document.createElement("span");
+                    fileName.textContent = attachment.name;
+
+                    fileChip.appendChild(icon);
+                    fileChip.appendChild(fileName);
+                    div.appendChild(fileChip);
+                }
             }
 
             div.appendChild(contentDiv);
@@ -2620,6 +3123,28 @@
         }
 
 
+        function updateQuickPromptsVisibility() {
+            if (!quickPrompts) {
+                return;
+            }
+
+            quickPrompts.style.display =
+                conversationHistory.length === 0
+                    ? "flex"
+                    : "none";
+        }
+
+
+        if (quickPrompts) {
+            quickPrompts.querySelectorAll(".quick-prompt").forEach(function(button) {
+                button.addEventListener("click", function() {
+                    messageInput.value = button.dataset.prompt || "";
+                    messageInput.focus();
+                });
+            });
+        }
+
+
         /* =========================
            SEND MESSAGE
         ========================= */
@@ -2649,6 +3174,10 @@
                 return;
             }
 
+            if (voiceModeEnabled && isListening) {
+                stopVoiceRecognition();
+            }
+
             isStreaming = true;
 
             sendButton.style.display = "none";
@@ -2664,7 +3193,9 @@
                 attachment: attachmentForRequest
                     ? {
                         name: attachmentForRequest.name,
-                        mimeType: attachmentForRequest.mimeType
+                        mimeType: attachmentForRequest.mimeType,
+                        kind: attachmentForRequest.kind ||
+                            (String(attachmentForRequest.mimeType || "").startsWith("image/") ? "image" : "document")
                     }
                     : null
             });
@@ -2732,15 +3263,26 @@
 
                             body: JSON.stringify({
                                 message: message,
-                                history:
-                                    conversationHistory,
-                                image: attachmentForRequest
-                                    ? {
-                                        name: attachmentForRequest.name,
-                                        mimeType: attachmentForRequest.mimeType,
-                                        dataUrl: attachmentForRequest.dataUrl
-                                    }
-                                    : null
+                                history: conversationHistory,
+                                image:
+                                    attachmentForRequest &&
+                                    attachmentForRequest.kind === "image"
+                                        ? {
+                                            name: attachmentForRequest.name,
+                                            mimeType: attachmentForRequest.mimeType,
+                                            dataUrl: attachmentForRequest.dataUrl
+                                        }
+                                        : null,
+                                file:
+                                    attachmentForRequest &&
+                                    attachmentForRequest.kind === "document"
+                                        ? {
+                                            name: attachmentForRequest.name,
+                                            mimeType: attachmentForRequest.mimeType,
+                                            dataUrl: attachmentForRequest.dataUrl
+                                        }
+                                        : null,
+                                responseStyle: responseStyle
                             })
                         }
                     );
@@ -3393,6 +3935,118 @@
             saveCurrentChat();
 
             sendMessage(messageText);
+        }
+
+
+        /* =========================
+           COPY CURRENT CHAT
+        ========================= */
+
+        async function copyCurrentChat() {
+
+            if (!Array.isArray(conversationHistory) || conversationHistory.length === 0) {
+                alert("Copy karne ke liye current chat empty hai.");
+                return;
+            }
+
+            const lines = [];
+
+            conversationHistory.forEach(function (msg) {
+
+                if (!msg || !msg.role) {
+                    return;
+                }
+
+                const role = msg.role === "user" ? "You" : "Normal Chat";
+                const content = String(msg.content || "").trim();
+
+                if (!content) {
+                    return;
+                }
+
+                lines.push(role + ":");
+                lines.push(content);
+
+                if (msg.attachment) {
+                    lines.push("[Attachment: " + String(msg.attachment.name || "file") + "]");
+                }
+
+                lines.push("");
+            });
+
+            const text = lines.join("\n").trim();
+
+            try {
+                await navigator.clipboard.writeText(text);
+
+                const oldText = copyChatButton.textContent;
+                copyChatButton.textContent = "Copied!";
+
+                setTimeout(function () {
+                    copyChatButton.textContent = oldText;
+                }, 1200);
+
+            } catch (error) {
+                console.error("Copy chat error:", error);
+                alert("Chat copy nahi ho payi.");
+            }
+        }
+
+
+        /* =========================
+           EXPORT CURRENT CHAT
+        ========================= */
+
+        function exportCurrentChat() {
+
+            if (!Array.isArray(conversationHistory) || conversationHistory.length === 0) {
+                alert("Export karne ke liye current chat empty hai.");
+                return;
+            }
+
+            const lines = [];
+
+            conversationHistory.forEach(function (msg) {
+
+                if (!msg || !msg.role) {
+                    return;
+                }
+
+                const role =
+                    msg.role === "user"
+                        ? "You"
+                        : "Normal Chat";
+
+                const content =
+                    String(msg.content || "").trim();
+
+                if (!content) {
+                    return;
+                }
+
+                lines.push(role + ":");
+                lines.push(content);
+
+                if (msg.attachment) {
+                    lines.push("[Attachment: " + String(msg.attachment.name || "file") + "]");
+                }
+
+                lines.push("");
+            });
+
+            const text = lines.join("\n").trim() + "\n";
+            const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            const date = new Date().toISOString().slice(0, 10);
+
+            link.href = url;
+            link.download = "Normal-Chat-" + date + ".txt";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
         }
 
 
@@ -4087,7 +4741,10 @@
         fileInput.addEventListener(
             "change",
             function () {
-                const file = fileInput.files && fileInput.files[0];
+
+                const file =
+                    fileInput.files &&
+                    fileInput.files[0];
 
                 if (!file) {
                     selectedAttachment = null;
@@ -4096,43 +4753,86 @@
                     return;
                 }
 
-                // Vision currently accepts images. Keep the picker ready for
-                // other file types, but do not pretend they are sent to AI yet.
-                if (!file.type.startsWith("image/")) {
+                const allowedExtensions = [
+                    ".pdf",
+                    ".txt",
+                    ".md",
+                    ".csv",
+                    ".docx",
+                    ".xlsx"
+                ];
+
+                const lowerName = file.name.toLowerCase();
+                const extension =
+                    lowerName.includes(".")
+                        ? lowerName.slice(lowerName.lastIndexOf("."))
+                        : "";
+
+                const isImage =
+                    file.type.startsWith("image/");
+
+                const isDocument =
+                    allowedExtensions.includes(extension) ||
+                    file.type === "application/pdf" ||
+                    file.type === "text/plain" ||
+                    file.type === "text/csv" ||
+                    file.type === "text/markdown" ||
+                    file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+                    file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+                if (!isImage && !isDocument) {
                     selectedAttachment = null;
                     fileInput.value = "";
                     selectedFile.style.display = "block";
-                    selectedFile.textContent = "⚠️ Abhi sirf image files supported hain.";
+                    selectedFile.textContent =
+                        "⚠️ Supported: images, PDF, TXT, MD, CSV, DOCX, XLSX.";
                     return;
                 }
 
-                if (file.size > 8 * 1024 * 1024) {
+                const maxBytes =
+                    isImage
+                        ? 8 * 1024 * 1024
+                        : 10 * 1024 * 1024;
+
+                if (file.size > maxBytes) {
                     selectedAttachment = null;
                     fileInput.value = "";
                     selectedFile.style.display = "block";
-                    selectedFile.textContent = "⚠️ Image 8 MB se chhoti honi chahiye.";
+                    selectedFile.textContent =
+                        isImage
+                            ? "⚠️ Image 8 MB se chhoti honi chahiye."
+                            : "⚠️ Document 10 MB se chhota hona chahiye.";
                     return;
                 }
 
                 const reader = new FileReader();
 
                 reader.onload = function () {
-                    const dataUrl = String(reader.result || "");
+
+                    const dataUrl =
+                        String(reader.result || "");
 
                     selectedAttachment = {
                         name: file.name,
-                        mimeType: file.type,
-                        dataUrl: dataUrl
+                        mimeType: file.type || "application/octet-stream",
+                        dataUrl: dataUrl,
+                        kind: isImage
+                            ? "image"
+                            : "document"
                     };
 
-                    selectedFile.textContent = "📎 " + file.name;
+                    selectedFile.textContent =
+                        (isImage ? "🖼️ " : "📄 ") +
+                        file.name;
+
                     selectedFile.style.display = "block";
                 };
 
                 reader.onerror = function () {
                     selectedAttachment = null;
                     selectedFile.style.display = "block";
-                    selectedFile.textContent = "⚠️ Image read nahi ho paayi.";
+                    selectedFile.textContent =
+                        "⚠️ File read nahi ho paayi.";
                 };
 
                 reader.readAsDataURL(file);
@@ -4157,6 +4857,17 @@
         newChatButton.addEventListener(
             "click",
             newChat
+        );
+
+        exportChatButton.addEventListener(
+            "click",
+            exportCurrentChat
+        );
+
+
+        copyChatButton.addEventListener(
+            "click",
+            copyCurrentChat
         );
 
 
@@ -4209,6 +4920,9 @@
         ========================= */
 
         checkLoginStatus();
+
+        updateQuickPromptsVisibility();
+        updateMessageCounter();
 
         messageInput.focus();
 

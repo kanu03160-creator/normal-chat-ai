@@ -5,3 +5,6 @@ gunicorn
 psycopg2-binary
 beautifulsoup4
 python-dotenv
+pypdf
+python-docx
+openpyxl
