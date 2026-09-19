@@ -212,6 +212,7 @@
             padding: 10px 16px;
             background: #000 !important;
             border-top: 1px solid #1f1f1f;
+            position: relative;
         }
 
         #message {
@@ -236,6 +237,174 @@
             background: #1b1b1b !important;
         }
 
+        /* =========================
+           ATTACHMENT
+        ========================= */
+
+        #attachButton {
+            height: 50px;
+            width: 50px;
+            min-width: 50px;
+            border: 1px solid #333;
+            border-radius: 50%;
+            background: #222;
+            color: #fff;
+            font-size: 30px;
+            font-weight: 300;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0 3px 0;
+        }
+
+        #attachButton:hover {
+            background: #2d2d2d;
+        }
+
+        .attach-wrap {
+            position: relative;
+            flex: 0 0 auto;
+        }
+
+        .attach-menu {
+            position: absolute;
+            left: 0;
+            bottom: 60px;
+            width: 250px;
+            padding: 8px;
+            border: 1px solid #303030;
+            border-radius: 14px;
+            background: #171717;
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+            display: none;
+            z-index: 3000;
+        }
+
+        .attach-menu.open {
+            display: block;
+            animation: attachMenuIn 0.14s ease-out;
+        }
+
+        @keyframes attachMenuIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .attach-menu-item {
+            width: 100%;
+            min-height: 52px;
+            border: 0;
+            border-radius: 10px;
+            background: transparent;
+            color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 11px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .attach-menu-item:hover {
+            background: #292929;
+        }
+
+        .attach-menu-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: #262626;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex: 0 0 34px;
+        }
+
+        .attach-menu-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .attach-menu-title {
+            font-weight: 600;
+        }
+
+        .attach-menu-subtitle {
+            color: #888;
+            font-size: 12px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .message-attachment-image {
+            display: block;
+            max-width: min(420px, 100%);
+            max-height: 320px;
+            margin: 4px 0 10px 0;
+            border-radius: 12px;
+            border: 1px solid #333;
+            object-fit: contain;
+            background: #111;
+        }
+
+        #selectedFile {
+            display: none;
+            position: absolute;
+            bottom: 78px;
+            left: 16px;
+            max-width: min(420px, calc(100vw - 32px));
+            padding: 8px 12px;
+            border: 1px solid #333;
+            border-radius: 10px;
+            background: #171717;
+            color: #ddd;
+            font-size: 13px;
+            z-index: 50;
+        }
+
+        /* =========================
+           VOICE
+        ========================= */
+
+        #micButton {
+            height: 50px;
+            width: 50px;
+            min-width: 50px;
+            border: 1px solid #333;
+            border-radius: 50%;
+            background: #222;
+            color: #fff;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        #micButton:hover {
+            background: #2d2d2d;
+        }
+
+        #micButton:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        /* =========================
+           SEND / STOP
+        ========================= */
+
         #sendButton {
             height: 50px;
             width: 82px;
@@ -256,6 +425,24 @@
         #sendButton:disabled {
             opacity: 0.45;
             cursor: not-allowed;
+        }
+
+        #stopButton {
+            display: none;
+            height: 50px;
+            min-width: 82px;
+            padding: 0 15px;
+            border: 1px solid #444;
+            border-radius: 13px;
+            background: #1b1b1b;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #stopButton:hover {
+            background: #292929;
         }
 
         /* =========================
@@ -597,6 +784,140 @@
         }
 
         /* =========================
+           MESSAGE ACTIONS
+        ========================= */
+
+        .message-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 9px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .message.bot:hover .message-actions,
+        .message.user:hover .message-actions,
+        .message-actions:focus-within {
+            opacity: 1;
+        }
+
+        .message-action {
+            border: 1px solid #333;
+            background: #1b1b1b;
+            color: #aaa;
+            border-radius: 7px;
+            padding: 5px 9px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .message-action:hover {
+            background: #292929;
+            color: #fff;
+        }
+
+        .message-action:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .message-content {
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        .message-content h1,
+        .message-content h2,
+        .message-content h3 {
+            margin: 8px 0;
+        }
+
+        .message-content p {
+            margin: 0 0 10px;
+        }
+
+        .message-content ul,
+        .message-content ol {
+            margin: 6px 0 10px 22px;
+            padding: 0;
+        }
+
+        .message-content li {
+            margin: 4px 0;
+        }
+
+        .message-content code {
+            background: #222;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 2px 5px;
+            font-family: Consolas, monospace;
+            font-size: 0.92em;
+        }
+
+        .message-content pre {
+            position: relative;
+            margin: 10px 0;
+            padding: 14px;
+            padding-top: 38px;
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+
+        .message-content pre code {
+            display: block;
+            background: transparent;
+            border: none;
+            padding: 0;
+            white-space: pre;
+        }
+
+        .code-copy-button {
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: #1b1b1b;
+            color: #bbb;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .code-copy-button:hover {
+            background: #292929;
+            color: #fff;
+        }
+
+        .edit-message-input {
+            width: 100%;
+            box-sizing: border-box;
+            resize: vertical;
+            min-height: 70px;
+            padding: 10px 12px;
+            margin-top: 6px;
+            border: 1px solid #444;
+            border-radius: 10px;
+            background: #171717;
+            color: #fff;
+            font: inherit;
+            outline: none;
+        }
+
+        .edit-message-input:focus {
+            border-color: #666;
+        }
+
+        .edit-message-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        /* =========================
            MOBILE
         ========================= */
 
@@ -634,6 +955,7 @@
             .input-area {
                 height: 64px;
                 padding: 8px;
+                gap: 6px;
             }
 
             #message {
@@ -641,10 +963,19 @@
                 font-size: 15px;
             }
 
-            #sendButton {
+            #attachButton,
+            #micButton {
+                width: 48px;
+                min-width: 48px;
+                height: 48px;
+            }
+
+            #sendButton,
+            #stopButton {
                 width: 65px;
                 min-width: 65px;
                 height: 48px;
+                padding: 0 8px;
                 font-size: 13px;
             }
 
@@ -670,9 +1001,18 @@
                 font-size: 10px;
             }
 
-            #sendButton {
+            #attachButton,
+            #micButton {
+                width: 44px;
+                min-width: 44px;
+                height: 44px;
+            }
+
+            #sendButton,
+            #stopButton {
                 width: 58px;
                 min-width: 58px;
+                padding: 0 5px;
             }
         }
     </style>
@@ -680,17 +1020,28 @@
 
 <body>
 
-    <!-- SIDEBAR -->
+    <!-- =========================
+         SIDEBAR
+    ========================= -->
 
     <div id="sidebar" class="sidebar">
 
         <div class="sidebar-header">
             <b>Chat History</b>
 
-            <button id="closeSidebar" type="button">✕</button>
+            <button
+                id="closeSidebar"
+                type="button"
+            >
+                ✕
+            </button>
         </div>
 
-        <button id="sidebarNewChat" class="sidebar-new-chat" type="button">
+        <button
+            id="sidebarNewChat"
+            class="sidebar-new-chat"
+            type="button"
+        >
             + New Chat
         </button>
 
@@ -701,7 +1052,10 @@
             autocomplete="off"
         >
 
-        <button id="clearHistorySearch" type="button">
+        <button
+            id="clearHistorySearch"
+            type="button"
+        >
             ✕ Clear Search
         </button>
 
@@ -710,7 +1064,9 @@
     </div>
 
 
-    <!-- HEADER -->
+    <!-- =========================
+         HEADER
+    ========================= -->
 
     <div class="header">
 
@@ -718,19 +1074,31 @@
 
         <div class="header-buttons">
 
-            <button id="historyButton" type="button">
+            <button
+                id="historyButton"
+                type="button"
+            >
                 History
             </button>
 
-            <button id="newChatButton" type="button">
+            <button
+                id="newChatButton"
+                type="button"
+            >
                 New Chat
             </button>
 
-            <button id="settingsButton" type="button">
+            <button
+                id="settingsButton"
+                type="button"
+            >
                 ⚙️
             </button>
 
-            <button id="loginButton" type="button">
+            <button
+                id="loginButton"
+                type="button"
+            >
                 Login
             </button>
 
@@ -739,14 +1107,77 @@
     </div>
 
 
-    <!-- CHAT -->
+    <!-- =========================
+         CHAT
+    ========================= -->
 
-    <div id="chatBox" class="chat-box"></div>
+    <div
+        id="chatBox"
+        class="chat-box"
+    ></div>
 
 
-    <!-- INPUT -->
+    <!-- =========================
+         INPUT
+    ========================= -->
 
     <div class="input-area">
+
+        <div id="selectedFile"></div>
+
+        <div class="attach-wrap">
+
+            <button
+                id="attachButton"
+                type="button"
+                aria-label="Add files"
+                title="Add files"
+            >
+                +
+            </button>
+
+            <div
+                id="attachMenu"
+                class="attach-menu"
+                role="menu"
+                aria-hidden="true"
+            >
+
+                <button
+                    id="uploadFilesOption"
+                    class="attach-menu-item"
+                    type="button"
+                    role="menuitem"
+                >
+
+                    <span class="attach-menu-icon">
+                        📎
+                    </span>
+
+                    <span class="attach-menu-text">
+
+                        <span class="attach-menu-title">
+                            Add photos &amp; files
+                        </span>
+
+                        <span class="attach-menu-subtitle">
+                            Upload from your computer
+                        </span>
+
+                    </span>
+
+                </button>
+
+            </div>
+
+            <input
+                type="file"
+                id="fileInput"
+                accept="image/*,.pdf,.txt,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx"
+            >
+
+        </div>
+
 
         <input
             type="text"
@@ -755,24 +1186,56 @@
             autocomplete="off"
         >
 
-        <button id="sendButton" type="button">
+
+        <button
+            id="micButton"
+            type="button"
+            title="Voice input"
+        >
+            🎙️
+        </button>
+
+
+        <button
+            id="sendButton"
+            type="button"
+        >
             Send
+        </button>
+
+
+        <button
+            id="stopButton"
+            type="button"
+        >
+            Stop
         </button>
 
     </div>
 
 
-    <!-- LOGIN MODAL -->
+    <!-- =========================
+         LOGIN MODAL
+    ========================= -->
 
-    <div id="loginModal" class="login-modal">
+    <div
+        id="loginModal"
+        class="login-modal"
+    >
 
         <div class="login-box">
 
-            <button id="closeLoginModal" class="close-login" type="button">
+            <button
+                id="closeLoginModal"
+                class="close-login"
+                type="button"
+            >
                 ×
             </button>
 
-            <h2 id="authTitle">Login</h2>
+            <h2 id="authTitle">
+                Login
+            </h2>
 
             <input
                 type="text"
@@ -788,17 +1251,27 @@
                 autocomplete="current-password"
             >
 
-            <button id="authSubmit" class="auth-submit" type="button">
+            <button
+                id="authSubmit"
+                class="auth-submit"
+                type="button"
+            >
                 Login
             </button>
 
             <p id="authMessage"></p>
 
             <p class="auth-switch">
+
                 Don't have an account?
-                <button id="switchAuth" type="button">
+
+                <button
+                    id="switchAuth"
+                    type="button"
+                >
                     Create Account
                 </button>
+
             </p>
 
         </div>
@@ -806,9 +1279,14 @@
     </div>
 
 
-    <!-- SETTINGS MODAL -->
+    <!-- =========================
+         SETTINGS MODAL
+    ========================= -->
 
-    <div id="settingsModal" class="settings-modal">
+    <div
+        id="settingsModal"
+        class="settings-modal"
+    >
 
         <div class="settings-box">
 
@@ -820,7 +1298,10 @@
                 ×
             </button>
 
-            <h2>Settings</h2>
+            <h2>
+                Settings
+            </h2>
+
 
             <div class="settings-section">
 
@@ -836,6 +1317,24 @@
                 </div>
 
             </div>
+
+
+            <div class="settings-section">
+
+                <div class="settings-label">
+                    Voice Reply
+                </div>
+
+                <button
+                    id="voiceToggleButton"
+                    class="logout-button"
+                    type="button"
+                >
+                    🔊 Voice: ON
+                </button>
+
+            </div>
+
 
             <div class="settings-section">
 
@@ -872,31 +1371,49 @@
         ========================= */
 
         const loginButton =
-            document.getElementById("loginButton");
+            document.getElementById(
+                "loginButton"
+            );
 
         const loginModal =
-            document.getElementById("loginModal");
+            document.getElementById(
+                "loginModal"
+            );
 
         const authTitle =
-            document.getElementById("authTitle");
+            document.getElementById(
+                "authTitle"
+            );
 
         const authUsername =
-            document.getElementById("authUsername");
+            document.getElementById(
+                "authUsername"
+            );
 
         const authPassword =
-            document.getElementById("authPassword");
+            document.getElementById(
+                "authPassword"
+            );
 
         const authSubmit =
-            document.getElementById("authSubmit");
+            document.getElementById(
+                "authSubmit"
+            );
 
         const authMessage =
-            document.getElementById("authMessage");
+            document.getElementById(
+                "authMessage"
+            );
 
         const switchAuth =
-            document.getElementById("switchAuth");
+            document.getElementById(
+                "switchAuth"
+            );
 
         const closeLoginModal =
-            document.getElementById("closeLoginModal");
+            document.getElementById(
+                "closeLoginModal"
+            );
 
 
         /* =========================
@@ -904,24 +1421,1173 @@
         ========================= */
 
         const settingsButton =
-            document.getElementById("settingsButton");
+            document.getElementById(
+                "settingsButton"
+            );
 
         const settingsModal =
-            document.getElementById("settingsModal");
+            document.getElementById(
+                "settingsModal"
+            );
 
         const closeSettings =
-            document.getElementById("closeSettings");
+            document.getElementById(
+                "closeSettings"
+            );
 
         const settingsUsername =
-            document.getElementById("settingsUsername");
+            document.getElementById(
+                "settingsUsername"
+            );
 
         const logoutButton =
-            document.getElementById("logoutButton");
+            document.getElementById(
+                "logoutButton"
+            );
 
+        const voiceToggleButton =
+            document.getElementById(
+                "voiceToggleButton"
+            );
+
+
+        /* =========================
+           STATE
+        ========================= */
 
         let isSignupMode = false;
 
         let loggedInUsername = null;
+
+        let conversationHistory = [];
+
+        let isStreaming = false;
+
+        let activeAbortController = null;
+
+        let selectedAttachment = null;
+
+        let voiceEnabled =
+            localStorage.getItem(
+                "normalChatVoice"
+            ) !== "off";
+
+
+        /* =========================
+           MAIN ELEMENTS
+        ========================= */
+
+        const messageInput =
+            document.getElementById(
+                "message"
+            );
+
+        const micButton =
+            document.getElementById(
+                "micButton"
+            );
+
+        const sendButton =
+            document.getElementById(
+                "sendButton"
+            );
+
+        const stopButton =
+            document.getElementById(
+                "stopButton"
+            );
+
+        const chatBox =
+            document.getElementById(
+                "chatBox"
+            );
+
+        const newChatButton =
+            document.getElementById(
+                "newChatButton"
+            );
+
+        const historyButton =
+            document.getElementById(
+                "historyButton"
+            );
+
+        const sidebar =
+            document.getElementById(
+                "sidebar"
+            );
+
+        const closeSidebar =
+            document.getElementById(
+                "closeSidebar"
+            );
+
+        const sidebarNewChat =
+            document.getElementById(
+                "sidebarNewChat"
+            );
+
+        const sidebarHistory =
+            document.getElementById(
+                "sidebarHistory"
+            );
+
+        const historySearch =
+            document.getElementById(
+                "historySearch"
+            );
+
+        const clearHistorySearch =
+            document.getElementById(
+                "clearHistorySearch"
+            );
+
+        const attachButton =
+            document.getElementById(
+                "attachButton"
+            );
+
+        const fileInput =
+            document.getElementById(
+                "fileInput"
+            );
+
+        const attachMenu =
+            document.getElementById(
+                "attachMenu"
+            );
+
+        const uploadFilesOption =
+            document.getElementById(
+                "uploadFilesOption"
+            );
+
+        const selectedFile =
+            document.getElementById(
+                "selectedFile"
+            );
+
+
+        /* =========================
+           ESCAPE HTML
+        ========================= */
+
+        function escapeHtml(text) {
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+            div.textContent =
+                String(text);
+
+            return div.innerHTML;
+        }
+
+
+        /* =========================
+           SAVE CURRENT CHAT
+        ========================= */
+
+        function saveCurrentChat() {
+
+            localStorage.setItem(
+                "normalChatCurrent",
+                JSON.stringify(
+                    conversationHistory
+                )
+            );
+        }
+
+
+        /* =========================
+           LOAD CURRENT CHAT
+        ========================= */
+
+        function loadCurrentChat() {
+
+            const savedChat =
+                localStorage.getItem(
+                    "normalChatCurrent"
+                );
+
+            if (!savedChat) {
+                return;
+            }
+
+            try {
+
+                const parsed =
+                    JSON.parse(
+                        savedChat
+                    );
+
+                if (
+                    !Array.isArray(
+                        parsed
+                    )
+                ) {
+
+                    conversationHistory = [];
+
+                    return;
+                }
+
+                conversationHistory =
+                    parsed;
+
+                chatBox.innerHTML =
+                    "";
+
+                conversationHistory.forEach(
+                    function (msg) {
+
+                        if (
+                            !msg ||
+                            !msg.role
+                        ) {
+                            return;
+                        }
+
+                        addMessageToScreen(
+                            msg.role,
+                            msg.content || "",
+                            msg.attachment || null
+                        );
+                    }
+                );
+
+                chatBox.scrollTop =
+                    chatBox.scrollHeight;
+
+            } catch (error) {
+
+                console.error(
+                    "Current chat load error:",
+                    error
+                );
+
+                conversationHistory = [];
+
+                localStorage.removeItem(
+                    "normalChatCurrent"
+                );
+            }
+        }
+
+
+        /* =========================
+           MARKDOWN RENDERER
+        ========================= */
+
+        function renderMessageContent(
+            content
+        ) {
+
+            const source =
+                String(
+                    content ?? ""
+                )
+                .replace(
+                    /\r\n/g,
+                    "\n"
+                )
+                .replace(
+                    /\r/g,
+                    "\n"
+                );
+
+            const codeBlocks = [];
+
+            let text =
+                source.replace(
+                    /```(?:[a-zA-Z0-9_+-]+)?\n?([\s\S]*?)```/g,
+                    function (
+                        _,
+                        code
+                    ) {
+
+                        const token =
+                            `@@CODEBLOCK_${codeBlocks.length}@@`;
+
+                        codeBlocks.push(
+                            code.replace(
+                                /^\n|\n$/g,
+                                ""
+                            )
+                        );
+
+                        return token;
+                    }
+                );
+
+            let html =
+                escapeHtml(
+                    text
+                );
+
+            html =
+                html.replace(
+                    /^### (.+)$/gm,
+                    "<h3>$1</h3>"
+                );
+
+            html =
+                html.replace(
+                    /^## (.+)$/gm,
+                    "<h2>$1</h2>"
+                );
+
+            html =
+                html.replace(
+                    /^# (.+)$/gm,
+                    "<h1>$1</h1>"
+                );
+
+            html =
+                html.replace(
+                    /\*\*(.+?)\*\*/g,
+                    "<strong>$1</strong>"
+                );
+
+            html =
+                html.replace(
+                    /\*([^*\n]+)\*/g,
+                    "<em>$1</em>"
+                );
+
+            html =
+                html.replace(
+                    /`([^`\n]+)`/g,
+                    "<code>$1</code>"
+                );
+
+            const lines =
+                html.split(
+                    "\n"
+                );
+
+            let output = "";
+
+            let inUl = false;
+
+            let inOl = false;
+
+            for (
+                let i = 0;
+                i < lines.length;
+                i++
+            ) {
+
+                const line =
+                    lines[i];
+
+                const unordered =
+                    /^[-*]\s+(.+)$/.exec(
+                        line
+                    );
+
+                const ordered =
+                    /^\d+\.\s+(.+)$/.exec(
+                        line
+                    );
+
+                if (unordered) {
+
+                    if (inOl) {
+
+                        output +=
+                            "</ol>";
+
+                        inOl = false;
+                    }
+
+                    if (!inUl) {
+
+                        output +=
+                            "<ul>";
+
+                        inUl = true;
+                    }
+
+                    output +=
+                        `<li>${unordered[1]}</li>`;
+
+                    continue;
+                }
+
+                if (ordered) {
+
+                    if (inUl) {
+
+                        output +=
+                            "</ul>";
+
+                        inUl = false;
+                    }
+
+                    if (!inOl) {
+
+                        output +=
+                            "<ol>";
+
+                        inOl = true;
+                    }
+
+                    output +=
+                        `<li>${ordered[1]}</li>`;
+
+                    continue;
+                }
+
+                if (inUl) {
+
+                    output +=
+                        "</ul>";
+
+                    inUl = false;
+                }
+
+                if (inOl) {
+
+                    output +=
+                        "</ol>";
+
+                    inOl = false;
+                }
+
+                if (!line.trim()) {
+
+                    output +=
+                        "<br>";
+
+                } else {
+
+                    output +=
+                        line +
+                        "<br>";
+                }
+            }
+
+            if (inUl) {
+                output += "</ul>";
+            }
+
+            if (inOl) {
+                output += "</ol>";
+            }
+
+            html = output;
+
+            html =
+                html.replace(
+                    /(<br>){3,}/g,
+                    "<br><br>"
+                );
+
+            html =
+                `<div>${html}</div>`;
+
+            codeBlocks.forEach(
+                function (
+                    code,
+                    index
+                ) {
+
+                    const escapedCode =
+                        escapeHtml(
+                            code
+                        );
+
+                    const block = `
+                        <pre>
+                            <button
+                                type="button"
+                                class="code-copy-button"
+                                data-code-index="${index}"
+                            >
+                                Copy code
+                            </button>
+                            <code>${escapedCode}</code>
+                        </pre>
+                    `;
+
+                    html =
+                        html.replace(
+                            `@@CODEBLOCK_${index}@@`,
+                            block
+                        );
+                }
+            );
+
+            return html;
+        }
+
+
+        function attachCodeCopyButtons(
+            container
+        ) {
+
+            container
+                .querySelectorAll(
+                    ".code-copy-button"
+                )
+                .forEach(
+                    function (
+                        button
+                    ) {
+
+                        button.addEventListener(
+                            "click",
+                            async function () {
+
+                                const code =
+                                    button.parentElement
+                                        .querySelector(
+                                            "code"
+                                        );
+
+                                if (!code) {
+                                    return;
+                                }
+
+                                try {
+
+                                    await navigator.clipboard.writeText(
+                                        code.textContent
+                                    );
+
+                                    button.textContent =
+                                        "Copied!";
+
+                                    setTimeout(
+                                        function () {
+
+                                            button.textContent =
+                                                "Copy code";
+
+                                        },
+                                        1200
+                                    );
+
+                                } catch (error) {
+
+                                    console.error(
+                                        "Code copy error:",
+                                        error
+                                    );
+
+                                    button.textContent =
+                                        "Copy failed";
+                                }
+                            }
+                        );
+                    }
+                );
+        }
+
+
+        /* =========================
+           ADD MESSAGE
+        ========================= */
+
+        function addMessageToScreen(
+            role,
+            content,
+            attachment = null
+        ) {
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+            div.className =
+                "message " +
+                (
+                    role === "user"
+                        ? "user"
+                        : "bot"
+                );
+
+            const name =
+                role === "user"
+                    ? "You"
+                    : "Normal Chat";
+
+            const nameDiv =
+                document.createElement(
+                    "b"
+                );
+
+            nameDiv.textContent =
+                name + ":";
+
+            div.appendChild(
+                nameDiv
+            );
+
+            div.appendChild(
+                document.createElement(
+                    "br"
+                )
+            );
+
+            if (
+                attachment &&
+                attachment.dataUrl
+            ) {
+
+                const image =
+                    document.createElement(
+                        "img"
+                    );
+
+                image.src =
+                    attachment.dataUrl;
+
+                image.alt =
+                    attachment.name ||
+                    (
+                        role === "assistant"
+                            ? "Edited image"
+                            : "Attached image"
+                    );
+
+                image.className =
+                    "message-attachment-image";
+
+                div.appendChild(
+                    image
+                );
+            }
+
+            const contentDiv =
+                document.createElement(
+                    "div"
+                );
+
+            contentDiv.className =
+                "message-content";
+
+            if (
+                role === "assistant"
+            ) {
+
+                contentDiv.innerHTML =
+                    renderMessageContent(
+                        content
+                    );
+
+                attachCodeCopyButtons(
+                    contentDiv
+                );
+
+            } else {
+
+                contentDiv.innerHTML =
+                    escapeHtml(
+                        content
+                    ).replace(
+                        /\n/g,
+                        "<br>"
+                    );
+            }
+
+            div.appendChild(
+                contentDiv
+            );
+
+
+            /* USER ACTIONS */
+
+            if (
+                role === "user"
+            ) {
+
+                const actions =
+                    document.createElement(
+                        "div"
+                    );
+
+                actions.className =
+                    "message-actions";
+
+                const editButton =
+                    document.createElement(
+                        "button"
+                    );
+
+                editButton.type =
+                    "button";
+
+                editButton.className =
+                    "message-action";
+
+                editButton.textContent =
+                    "Edit";
+
+                editButton.addEventListener(
+                    "click",
+                    function () {
+
+                        const messageIndex =
+                            conversationHistory.indexOf(
+                                conversationHistory.find(
+                                    function (msg) {
+
+                                        return (
+                                            msg &&
+                                            msg.role === "user" &&
+                                            msg.content === content
+                                        );
+                                    }
+                                )
+                            );
+
+                        if (
+                            messageIndex < 0
+                        ) {
+                            return;
+                        }
+
+                        editUserMessage(
+                            messageIndex,
+                            div
+                        );
+                    }
+                );
+
+                actions.appendChild(
+                    editButton
+                );
+
+                div.appendChild(
+                    actions
+                );
+
+            } else {
+
+                /* ASSISTANT ACTIONS */
+
+                const actions =
+                    document.createElement(
+                        "div"
+                    );
+
+                actions.className =
+                    "message-actions";
+
+                const copyButton =
+                    document.createElement(
+                        "button"
+                    );
+
+                copyButton.type =
+                    "button";
+
+                copyButton.className =
+                    "message-action";
+
+                copyButton.textContent =
+                    "Copy";
+
+                copyButton.addEventListener(
+                    "click",
+                    async function () {
+
+                        try {
+
+                            await navigator.clipboard.writeText(
+                                String(content)
+                            );
+
+                            copyButton.textContent =
+                                "Copied!";
+
+                            setTimeout(
+                                function () {
+
+                                    copyButton.textContent =
+                                        "Copy";
+
+                                },
+                                1200
+                            );
+
+                        } catch (error) {
+
+                            console.error(
+                                "Copy error:",
+                                error
+                            );
+
+                            copyButton.textContent =
+                                "Copy failed";
+                        }
+                    }
+                );
+
+
+                const regenerateButton =
+                    document.createElement(
+                        "button"
+                    );
+
+                regenerateButton.type =
+                    "button";
+
+                regenerateButton.className =
+                    "message-action";
+
+                regenerateButton.textContent =
+                    "Regenerate";
+
+                regenerateButton.addEventListener(
+                    "click",
+                    function () {
+
+                        const messageIndex =
+                            conversationHistory.findIndex(
+                                function (msg) {
+
+                                    return (
+                                        msg &&
+                                        msg.role === "assistant" &&
+                                        msg.content === content
+                                    );
+                                }
+                            );
+
+                        if (
+                            messageIndex < 0
+                        ) {
+                            return;
+                        }
+
+                        regenerateResponse(
+                            messageIndex
+                        );
+                    }
+                );
+
+
+                const branchButton =
+                    document.createElement(
+                        "button"
+                    );
+
+                branchButton.type =
+                    "button";
+
+                branchButton.className =
+                    "message-action";
+
+                branchButton.textContent =
+                    "Branch";
+
+                branchButton.addEventListener(
+                    "click",
+                    function () {
+
+                        const messageElements =
+                            Array.from(
+                                chatBox.querySelectorAll(
+                                    ".message"
+                                )
+                            );
+
+                        const messageIndex =
+                            messageElements.indexOf(
+                                div
+                            );
+
+                        if (
+                            messageIndex < 0
+                        ) {
+                            return;
+                        }
+
+                        branchConversation(
+                            messageIndex
+                        );
+                    }
+                );
+
+
+                actions.appendChild(
+                    copyButton
+                );
+
+                actions.appendChild(
+                    regenerateButton
+                );
+
+                actions.appendChild(
+                    branchButton
+                );
+
+                div.appendChild(
+                    actions
+                );
+            }
+
+            chatBox.appendChild(
+                div
+            );
+
+            return div;
+        }
+
+
+        /* =========================
+           STREAMING MESSAGE
+        ========================= */
+
+        function createStreamingMessage() {
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+            div.className =
+                "message bot";
+
+            div.innerHTML = `
+                <b>Normal Chat:</b><br>
+                <span class="streaming-text"></span>
+            `;
+
+            chatBox.appendChild(
+                div
+            );
+
+            return div;
+        }
+
+
+        /* =========================
+           VOICE INPUT
+        ========================= */
+
+        const SpeechRecognition =
+            window.SpeechRecognition ||
+            window.webkitSpeechRecognition;
+
+        let recognition = null;
+
+        let isListening = false;
+
+        if (
+            SpeechRecognition &&
+            micButton
+        ) {
+
+            recognition =
+                new SpeechRecognition();
+
+            recognition.continuous =
+                false;
+
+            recognition.interimResults =
+                true;
+
+            recognition.lang =
+                "en-IN";
+
+            recognition.onstart =
+                function () {
+
+                    isListening =
+                        true;
+
+                    micButton.textContent =
+                        "🔴";
+
+                    micButton.title =
+                        "Listening...";
+                };
+
+            recognition.onresult =
+                function (event) {
+
+                    let transcript =
+                        "";
+
+                    for (
+                        let i =
+                            event.resultIndex;
+                        i <
+                            event.results.length;
+                        i++
+                    ) {
+
+                        transcript +=
+                            event.results[i][0]
+                                .transcript;
+                    }
+
+                    messageInput.value =
+                        transcript.trim();
+                };
+
+            recognition.onerror =
+                function (event) {
+
+                    console.error(
+                        "Voice input error:",
+                        event.error
+                    );
+                };
+
+            recognition.onend =
+                function () {
+
+                    isListening =
+                        false;
+
+                    micButton.textContent =
+                        "🎙️";
+
+                    micButton.title =
+                        "Voice input";
+                };
+
+            micButton.addEventListener(
+                "click",
+                function () {
+
+                    if (
+                        isListening
+                    ) {
+
+                        recognition.stop();
+
+                        return;
+                    }
+
+                    try {
+
+                        recognition.start();
+
+                    } catch (error) {
+
+                        console.error(
+                            "Voice start error:",
+                            error
+                        );
+                    }
+                }
+            );
+
+        } else {
+
+            micButton.disabled =
+                true;
+
+            micButton.title =
+                "Voice input is not supported.";
+        }
+
+
+        /* =========================
+           VOICE OUTPUT
+        ========================= */
+
+        function updateVoiceButton() {
+
+            if (!voiceToggleButton) {
+                return;
+            }
+
+            voiceToggleButton.textContent =
+                voiceEnabled
+                    ? "🔊 Voice: ON"
+                    : "🔇 Voice: OFF";
+        }
+
+        updateVoiceButton();
+
+
+        function speakReply(
+            text
+        ) {
+
+            if (!voiceEnabled) {
+                return;
+            }
+
+            if (
+                !(
+                    "speechSynthesis"
+                    in window
+                )
+            ) {
+                return;
+            }
+
+            const cleanText =
+                String(
+                    text || ""
+                ).trim();
+
+            if (!cleanText) {
+                return;
+            }
+
+            window.speechSynthesis.cancel();
+
+            const utterance =
+                new SpeechSynthesisUtterance(
+                    cleanText
+                );
+
+            utterance.lang =
+                "en-IN";
+
+            utterance.rate =
+                1;
+
+            utterance.pitch =
+                1;
+
+            utterance.volume =
+                1;
+
+            window.speechSynthesis.speak(
+                utterance
+            );
+        }
+
+
+        voiceToggleButton.addEventListener(
+            "click",
+            function () {
+
+                voiceEnabled =
+                    !voiceEnabled;
+
+                localStorage.setItem(
+                    "normalChatVoice",
+                    voiceEnabled
+                        ? "on"
+                        : "off"
+                );
+
+                updateVoiceButton();
+
+                if (
+                    !voiceEnabled &&
+                    "speechSynthesis"
+                    in window
+                ) {
+
+                    window.speechSynthesis.cancel();
+                }
+            }
+        );
 
 
         /* =========================
@@ -945,27 +2611,40 @@
                     ? "Login"
                     : "Create Account";
 
-            document.querySelector(".auth-switch").firstChild.textContent =
-                isSignupMode
-                    ? "Already have an account? "
-                    : "Don't have an account? ";
+            const authSwitch =
+                document.querySelector(
+                    ".auth-switch"
+                );
+
+            if (authSwitch) {
+
+                authSwitch.firstChild.textContent =
+                    isSignupMode
+                        ? "Already have an account? "
+                        : "Don't have an account? ";
+            }
         }
 
 
         switchAuth.addEventListener(
             "click",
-            () => {
+            function () {
 
                 isSignupMode =
                     !isSignupMode;
 
                 updateAuthMode();
 
-                authMessage.textContent = "";
+                authMessage.textContent =
+                    "";
 
-                authUsername.value = "";
+                authUsername.value =
+                    "";
 
-                authPassword.value = "";
+                authPassword.value =
+                    "";
+
+                authUsername.focus();
             }
         );
 
@@ -976,9 +2655,11 @@
 
         loginButton.addEventListener(
             "click",
-            () => {
+            function () {
 
-                if (loggedInUsername) {
+                if (
+                    loggedInUsername
+                ) {
 
                     settingsUsername.textContent =
                         loggedInUsername;
@@ -999,7 +2680,7 @@
 
         closeLoginModal.addEventListener(
             "click",
-            () => {
+            function () {
 
                 loginModal.style.display =
                     "none";
@@ -1009,9 +2690,12 @@
 
         loginModal.addEventListener(
             "click",
-            (event) => {
+            function (event) {
 
-                if (event.target === loginModal) {
+                if (
+                    event.target ===
+                    loginModal
+                ) {
 
                     loginModal.style.display =
                         "none";
@@ -1026,9 +2710,11 @@
 
         settingsButton.addEventListener(
             "click",
-            () => {
+            function () {
 
-                if (!loggedInUsername) {
+                if (
+                    !loggedInUsername
+                ) {
 
                     loginModal.style.display =
                         "flex";
@@ -1049,7 +2735,7 @@
 
         closeSettings.addEventListener(
             "click",
-            () => {
+            function () {
 
                 settingsModal.style.display =
                     "none";
@@ -1059,9 +2745,12 @@
 
         settingsModal.addEventListener(
             "click",
-            (event) => {
+            function (event) {
 
-                if (event.target === settingsModal) {
+                if (
+                    event.target ===
+                    settingsModal
+                ) {
 
                     settingsModal.style.display =
                         "none";
@@ -1076,12 +2765,16 @@
 
         logoutButton.addEventListener(
             "click",
-            async () => {
+            async function () {
 
                 const confirmLogout =
-                    confirm("Kya aap logout karna chahte ho?");
+                    confirm(
+                        "Kya aap logout karna chahte ho?"
+                    );
 
-                if (!confirmLogout) {
+                if (
+                    !confirmLogout
+                ) {
                     return;
                 }
 
@@ -1108,7 +2801,9 @@
                             ? await response.json()
                             : {};
 
-                    if (!response.ok) {
+                    if (
+                        !response.ok
+                    ) {
 
                         throw new Error(
                             data.error ||
@@ -1116,23 +2811,39 @@
                         );
                     }
 
-                    loggedInUsername = null;
+                    loggedInUsername =
+                        null;
 
                     loginButton.textContent =
                         "Login";
 
+                    settingsUsername.textContent =
+                        "Not logged in";
+
                     settingsModal.style.display =
                         "none";
 
-                    conversationHistory = [];
+                    conversationHistory =
+                        [];
 
-                    chatBox.innerHTML = "";
+                    chatBox.innerHTML =
+                        "";
 
                     localStorage.removeItem(
                         "normalChatCurrent"
                     );
 
-                    alert("Logout successful!");
+                    if (
+                        "speechSynthesis"
+                        in window
+                    ) {
+
+                        window.speechSynthesis.cancel();
+                    }
+
+                    alert(
+                        "Logout successful!"
+                    );
 
                 } catch (error) {
 
@@ -1162,15 +2873,17 @@
                     await fetch(
                         "/me",
                         {
-                            credentials: "include"
+                            credentials:
+                                "include"
                         }
                     );
 
                 const data =
                     await response.json();
 
-
-                if (data.logged_in) {
+                if (
+                    data.logged_in
+                ) {
 
                     loggedInUsername =
                         data.username;
@@ -1185,7 +2898,8 @@
 
                 } else {
 
-                    loggedInUsername = null;
+                    loggedInUsername =
+                        null;
 
                     loginButton.textContent =
                         "Login";
@@ -1210,7 +2924,7 @@
 
         authSubmit.addEventListener(
             "click",
-            async () => {
+            async function () {
 
                 const username =
                     authUsername.value.trim();
@@ -1218,8 +2932,10 @@
                 const password =
                     authPassword.value;
 
-
-                if (!username || !password) {
+                if (
+                    !username ||
+                    !password
+                ) {
 
                     authMessage.textContent =
                         "Username and password required";
@@ -1227,13 +2943,11 @@
                     return;
                 }
 
-
                 authSubmit.disabled =
                     true;
 
                 authMessage.textContent =
                     "Please wait...";
-
 
                 try {
 
@@ -1241,7 +2955,6 @@
                         isSignupMode
                             ? "/signup"
                             : "/login";
-
 
                     const response =
                         await fetch(
@@ -1254,21 +2967,21 @@
                                         "application/json"
                                 },
 
-                                credentials: "include",
+                                credentials:
+                                    "include",
 
-                                body: JSON.stringify({
-                                    username,
-                                    password
-                                })
+                                body:
+                                    JSON.stringify({
+                                        username,
+                                        password
+                                    })
                             }
                         );
-
 
                     const contentType =
                         response.headers.get(
                             "content-type"
                         ) || "";
-
 
                     const data =
                         contentType.includes(
@@ -1277,11 +2990,12 @@
                             ? await response.json()
                             : {
                                 error:
-                                    `Server returned ${response.status} instead of JSON`
+                                    `Server returned ${response.status}`
                             };
 
-
-                    if (!response.ok) {
+                    if (
+                        !response.ok
+                    ) {
 
                         authMessage.textContent =
                             data.error ||
@@ -1290,32 +3004,31 @@
                         return;
                     }
 
-
                     authMessage.textContent =
                         isSignupMode
                             ? "Account created successfully!"
                             : "Login successful!";
 
-
                     await checkLoginStatus();
 
-
                     setTimeout(
-                        () => {
+                        function () {
 
                             loginModal.style.display =
                                 "none";
 
-                            authUsername.value = "";
+                            authUsername.value =
+                                "";
 
-                            authPassword.value = "";
+                            authPassword.value =
+                                "";
 
-                            authMessage.textContent = "";
+                            authMessage.textContent =
+                                "";
 
                         },
                         500
                     );
-
 
                 } catch (error) {
 
@@ -1337,209 +3050,47 @@
 
 
         /* =========================
-           VARIABLES
+           SAVE / OPEN HISTORY CHAT
         ========================= */
 
-        let conversationHistory = [];
-
-        let isStreaming = false;
-
-
-        const messageInput =
-            document.getElementById("message");
-
-        const sendButton =
-            document.getElementById("sendButton");
-
-        const chatBox =
-            document.getElementById("chatBox");
-
-        const newChatButton =
-            document.getElementById("newChatButton");
-
-        const historyButton =
-            document.getElementById("historyButton");
-
-        const sidebar =
-            document.getElementById("sidebar");
-
-        const closeSidebar =
-            document.getElementById("closeSidebar");
-
-        const sidebarNewChat =
-            document.getElementById("sidebarNewChat");
-
-        const sidebarHistory =
-            document.getElementById("sidebarHistory");
-
-        const historySearch =
-            document.getElementById("historySearch");
-
-        const clearHistorySearch =
-            document.getElementById("clearHistorySearch");
-
-
-        /* =========================
-           ESCAPE HTML
-        ========================= */
-
-        function escapeHtml(text) {
-
-            const div =
-                document.createElement("div");
-
-            div.textContent =
-                String(text);
-
-            return div.innerHTML;
-        }
-
-
-        /* =========================
-           SAVE CURRENT CHAT
-        ========================= */
-
-        function saveCurrentChat() {
-
-            localStorage.setItem(
-                "normalChatCurrent",
-                JSON.stringify(conversationHistory)
-            );
-        }
-
-
-        /* =========================
-           LOAD CURRENT CHAT
-        ========================= */
-
-        function loadCurrentChat() {
-
-            const savedChat =
-                localStorage.getItem(
-                    "normalChatCurrent"
-                );
-
-
-            if (!savedChat) {
-                return;
-            }
-
-
-            try {
-
-                const parsed =
-                    JSON.parse(savedChat);
-
-
-                if (!Array.isArray(parsed)) {
-
-                    conversationHistory = [];
-
-                    return;
-                }
-
-
-                conversationHistory =
-                    parsed;
-
-
-                chatBox.innerHTML = "";
-
-
-                conversationHistory.forEach(
-                    function (msg) {
-
-                        addMessageToScreen(
-                            msg.role,
-                            msg.content
-                        );
-
-                    }
-                );
-
-
-                chatBox.scrollTop =
-                    chatBox.scrollHeight;
-
-
-            } catch (error) {
-
-                console.error(
-                    "Current chat load error:",
-                    error
-                );
-
-
-                conversationHistory = [];
-
-
-                localStorage.removeItem(
-                    "normalChatCurrent"
-                );
-            }
-        }
-
-
-        /* =========================
-           ADD MESSAGE
-        ========================= */
-
-        function addMessageToScreen(
-            role,
-            content
+        function openHistoryChat(
+            chat
         ) {
 
-            const div =
-                document.createElement("div");
+            conversationHistory =
+                Array.isArray(
+                    chat.messages
+                )
+                    ? chat.messages
+                    : [];
 
+            chatBox.innerHTML =
+                "";
 
-            div.className =
-                "message " +
-                (
-                    role === "user"
-                        ? "user"
-                        : "bot"
-                );
+            conversationHistory.forEach(
+                function (
+                    message
+                ) {
 
+                    if (
+                        !message ||
+                        !message.role
+                    ) {
+                        return;
+                    }
 
-            const name =
-                role === "user"
-                    ? "You"
-                    : "Normal Chat";
+                    addMessageToScreen(
+                        message.role,
+                        message.content || "",
+                        message.attachment || null
+                    );
+                }
+            );
 
+            saveCurrentChat();
 
-            div.innerHTML = `
-                <b>${name}:</b><br>
-                ${escapeHtml(content)}
-            `;
-
-
-            chatBox.appendChild(div);
-
-            return div;
-        }
-
-
-        /* =========================
-           CREATE STREAMING MESSAGE
-        ========================= */
-
-        function createStreamingMessage() {
-
-            const div =
-                document.createElement("div");
-
-            div.className =
-                "message bot";
-
-            div.innerHTML = `
-                <b>Normal Chat:</b><br>
-                <span class="streaming-text"></span>
-            `;
-
-            chatBox.appendChild(div);
-
-            return div;
+            chatBox.scrollTop =
+                chatBox.scrollHeight;
         }
 
 
@@ -1547,23 +3098,30 @@
            SEND MESSAGE
         ========================= */
 
-        async function sendMessage() {
+        async function sendMessage(
+            messageOverride = null
+        ) {
 
-            if (isStreaming) {
+            if (
+                isStreaming
+            ) {
                 return;
             }
 
-
             const message =
-                messageInput.value.trim();
-
+                messageOverride !== null
+                    ? String(
+                        messageOverride
+                    ).trim()
+                    : messageInput.value.trim();
 
             if (!message) {
                 return;
             }
 
-
-            if (!loggedInUsername) {
+            if (
+                !loggedInUsername
+            ) {
 
                 loginModal.style.display =
                     "flex";
@@ -1573,41 +3131,81 @@
                 return;
             }
 
+            isStreaming =
+                true;
 
-            isStreaming = true;
+            sendButton.style.display =
+                "none";
 
-            sendButton.disabled = true;
+            stopButton.style.display =
+                "block";
 
-            messageInput.disabled = true;
+            sendButton.disabled =
+                true;
+
+            micButton.disabled =
+                true;
+
+            messageInput.disabled =
+                true;
+
+            const attachmentForRequest =
+                selectedAttachment;
 
 
             conversationHistory.push({
                 role: "user",
-                content: message
+                content: message,
+
+                attachment:
+                    attachmentForRequest
+                        ? {
+                            name:
+                                attachmentForRequest.name,
+
+                            mimeType:
+                                attachmentForRequest.mimeType
+                        }
+                        : null
             });
 
 
             addMessageToScreen(
                 "user",
-                message
+                message,
+                attachmentForRequest
             );
 
 
-            messageInput.value = "";
+            messageInput.value =
+                "";
+
+            selectedAttachment =
+                null;
+
+            fileInput.value =
+                "";
+
+            selectedFile.style.display =
+                "none";
+
+            selectedFile.textContent =
+                "";
+
 
             saveCurrentChat();
 
 
             const thinking =
-                document.createElement("div");
-
+                document.createElement(
+                    "div"
+                );
 
             thinking.className =
                 "message bot";
 
             thinking.id =
                 "thinking";
-
 
             thinking.innerHTML = `
                 <b>Normal Chat:</b><br>
@@ -1618,11 +3216,25 @@
                 </span>
             `;
 
-
-            chatBox.appendChild(thinking);
+            chatBox.appendChild(
+                thinking
+            );
 
             chatBox.scrollTop =
                 chatBox.scrollHeight;
+
+
+            activeAbortController =
+                new AbortController();
+
+            let streamingMessage =
+                null;
+
+            let fullReply =
+                "";
+
+            let editedImageAttachment =
+                null;
 
 
             try {
@@ -1638,20 +3250,39 @@
                                     "application/json"
                             },
 
-                            credentials: "include",
+                            credentials:
+                                "include",
 
-                            body: JSON.stringify({
-                                message: message,
-                                history:
-                                    conversationHistory
-                            })
+                            signal:
+                                activeAbortController.signal,
+
+                            body:
+                                JSON.stringify({
+
+                                    message:
+                                        message,
+
+                                    history:
+                                        conversationHistory,
+
+                                    image:
+                                        attachmentForRequest
+                                            ? {
+                                                name:
+                                                    attachmentForRequest.name,
+
+                                                mimeType:
+                                                    attachmentForRequest.mimeType,
+
+                                                dataUrl:
+                                                    attachmentForRequest.dataUrl
+                                            }
+                                            : null
+                                })
                         }
                     );
 
 
-                /*
-                 * Login / normal JSON error
-                 */
                 const contentType =
                     response.headers.get(
                         "content-type"
@@ -1675,7 +3306,9 @@
                 }
 
 
-                if (!response.ok) {
+                if (
+                    !response.ok
+                ) {
 
                     throw new Error(
                         `Server returned ${response.status}`
@@ -1683,20 +3316,12 @@
                 }
 
 
-                /*
-                 * Remove thinking dots
-                 */
-
                 if (thinking) {
                     thinking.remove();
                 }
 
 
-                /*
-                 * Streaming message
-                 */
-
-                const streamingMessage =
+                streamingMessage =
                     createStreamingMessage();
 
 
@@ -1706,11 +3331,9 @@
                     );
 
 
-                /*
-                 * Get stream
-                 */
-
-                if (!response.body) {
+                if (
+                    !response.body
+                ) {
 
                     throw new Error(
                         "Streaming response available nahi hai."
@@ -1721,16 +3344,13 @@
                 const reader =
                     response.body.getReader();
 
-
                 const decoder =
                     new TextDecoder(
                         "utf-8"
                     );
 
-
-                let buffer = "";
-
-                let fullReply = "";
+                let buffer =
+                    "";
 
 
                 while (true) {
@@ -1738,7 +3358,8 @@
                     const {
                         value,
                         done
-                    } = await reader.read();
+                    } =
+                        await reader.read();
 
 
                     if (done) {
@@ -1746,12 +3367,13 @@
                     }
 
 
-                    buffer += decoder.decode(
-                        value,
-                        {
-                            stream: true
-                        }
-                    );
+                    buffer +=
+                        decoder.decode(
+                            value,
+                            {
+                                stream: true
+                            }
+                        );
 
 
                     const events =
@@ -1761,7 +3383,8 @@
 
 
                     buffer =
-                        events.pop() || "";
+                        events.pop() ||
+                        "";
 
 
                     for (
@@ -1770,7 +3393,9 @@
                     ) {
 
                         const lines =
-                            event.split("\n");
+                            event.split(
+                                "\n"
+                            );
 
 
                         for (
@@ -1819,9 +3444,43 @@
                             }
 
 
-                            /*
-                             * Text chunk
-                             */
+                            if (
+                                payload.type ===
+                                "image"
+                            ) {
+
+                                const mimeType =
+                                    String(
+                                        payload.mimeType ||
+                                        "image/png"
+                                    );
+
+                                const imageData =
+                                    String(
+                                        payload.data ||
+                                        ""
+                                    );
+
+                                if (
+                                    imageData
+                                ) {
+
+                                    editedImageAttachment =
+                                        {
+                                            name:
+                                                "edited-image.png",
+
+                                            mimeType:
+                                                mimeType,
+
+                                            dataUrl:
+                                                `data:${mimeType};base64,${imageData}`
+                                        };
+                                }
+
+                                continue;
+                            }
+
 
                             if (
                                 payload.type ===
@@ -1834,41 +3493,19 @@
                                         ""
                                     );
 
-
                                 fullReply +=
                                     chunk;
-
 
                                 streamingText.textContent =
                                     fullReply;
 
-
                                 chatBox.scrollTop =
                                     chatBox.scrollHeight;
-                            }
-
-
-                            /*
-                             * Stream completed
-                             */
-
-                            if (
-                                payload.type ===
-                                "done"
-                            ) {
-
-                                console.log(
-                                    "Streaming completed."
-                                );
                             }
                         }
                     }
                 }
 
-
-                /*
-                 * Save final answer
-                 */
 
                 fullReply =
                     fullReply.trim();
@@ -1876,7 +3513,11 @@
 
                 if (!fullReply) {
 
-                    streamingMessage.remove();
+                    if (
+                        streamingMessage
+                    ) {
+                        streamingMessage.remove();
+                    }
 
                     throw new Error(
                         "AI ne empty reply diya."
@@ -1886,11 +3527,45 @@
 
                 conversationHistory.push({
                     role: "assistant",
-                    content: fullReply
+                    content: fullReply,
+
+                    attachment:
+                        editedImageAttachment
+                            ? {
+                                name:
+                                    editedImageAttachment.name,
+
+                                mimeType:
+                                    editedImageAttachment.mimeType,
+
+                                dataUrl:
+                                    editedImageAttachment.dataUrl
+                            }
+                            : null
                 });
 
 
                 saveCurrentChat();
+
+
+                if (
+                    streamingMessage
+                ) {
+
+                    streamingMessage.remove();
+                }
+
+
+                addMessageToScreen(
+                    "assistant",
+                    fullReply,
+                    editedImageAttachment
+                );
+
+
+                speakReply(
+                    fullReply
+                );
 
 
                 chatBox.scrollTop =
@@ -1904,30 +3579,106 @@
                 }
 
 
-                /*
-                 * Only add error if no normal
-                 * streaming response exists.
-                 */
+                if (
+                    error.name ===
+                    "AbortError"
+                ) {
 
-                addMessageToScreen(
-                    "assistant",
-                    "Error: " +
-                    error.message
-                );
+                    if (
+                        streamingMessage
+                    ) {
+
+                        streamingMessage.remove();
+                    }
 
 
-                console.error(
-                    "Chat error:",
-                    error
-                );
+                    if (
+                        fullReply
+                    ) {
+
+                        conversationHistory.push({
+                            role:
+                                "assistant",
+
+                            content:
+                                fullReply.trim(),
+
+                            attachment:
+                                editedImageAttachment
+                                    ? {
+                                        name:
+                                            editedImageAttachment.name,
+
+                                        mimeType:
+                                            editedImageAttachment.mimeType,
+
+                                        dataUrl:
+                                            editedImageAttachment.dataUrl
+                                    }
+                                    : null
+                        });
+
+
+                        saveCurrentChat();
+
+
+                        addMessageToScreen(
+                            "assistant",
+                            fullReply.trim(),
+                            editedImageAttachment
+                        );
+
+
+                        speakReply(
+                            fullReply.trim()
+                        );
+                    }
+
+                } else {
+
+                    if (
+                        streamingMessage
+                    ) {
+
+                        streamingMessage.remove();
+                    }
+
+
+                    addMessageToScreen(
+                        "assistant",
+                        "Error: " +
+                        error.message
+                    );
+
+
+                    console.error(
+                        "Chat error:",
+                        error
+                    );
+                }
 
             } finally {
 
-                isStreaming = false;
+                isStreaming =
+                    false;
 
-                sendButton.disabled = false;
+                activeAbortController =
+                    null;
 
-                messageInput.disabled = false;
+                sendButton.style.display =
+                    "block";
+
+                stopButton.style.display =
+                    "none";
+
+                sendButton.disabled =
+                    false;
+
+                micButton.disabled =
+                    false;
+
+                messageInput.disabled =
+                    false;
 
                 messageInput.focus();
             }
@@ -1935,23 +3686,365 @@
 
 
         /* =========================
-           NEW CHAT
+           EDIT USER MESSAGE
         ========================= */
 
-        async function newChat() {
+        function editUserMessage(
+            messageIndex,
+            messageElement
+        ) {
 
             if (isStreaming) {
                 return;
             }
 
+            const message =
+                conversationHistory[
+                    messageIndex
+                ];
 
-            if (!loggedInUsername) {
+            if (
+                !message ||
+                message.role !== "user"
+            ) {
+                return;
+            }
 
-                loginModal.style.display =
-                    "flex";
+            const originalText =
+                String(
+                    message.content ||
+                    ""
+                );
 
-                authUsername.focus();
+            const contentDiv =
+                messageElement.querySelector(
+                    ".message-content"
+                );
 
+            if (!contentDiv) {
+                return;
+            }
+
+
+            const editor =
+                document.createElement(
+                    "textarea"
+                );
+
+            editor.className =
+                "edit-message-input";
+
+            editor.value =
+                originalText;
+
+            editor.rows =
+                Math.min(
+                    6,
+                    Math.max(
+                        2,
+                        originalText.split(
+                            "\n"
+                        ).length
+                    )
+                );
+
+
+            const editActions =
+                document.createElement(
+                    "div"
+                );
+
+            editActions.className =
+                "edit-message-actions";
+
+
+            const saveButton =
+                document.createElement(
+                    "button"
+                );
+
+            saveButton.type =
+                "button";
+
+            saveButton.className =
+                "message-action";
+
+            saveButton.textContent =
+                "Send";
+
+
+            const cancelButton =
+                document.createElement(
+                    "button"
+                );
+
+            cancelButton.type =
+                "button";
+
+            cancelButton.className =
+                "message-action";
+
+            cancelButton.textContent =
+                "Cancel";
+
+
+            editActions.appendChild(
+                saveButton
+            );
+
+            editActions.appendChild(
+                cancelButton
+            );
+
+
+            contentDiv.replaceWith(
+                editor
+            );
+
+
+            const oldActions =
+                messageElement.querySelector(
+                    ".message-actions"
+                );
+
+            if (oldActions) {
+                oldActions.remove();
+            }
+
+
+            messageElement.appendChild(
+                editActions
+            );
+
+
+            editor.focus();
+
+            editor.setSelectionRange(
+                editor.value.length,
+                editor.value.length
+            );
+
+
+            const cancelEdit =
+                function () {
+
+                    const restoredContent =
+                        document.createElement(
+                            "div"
+                        );
+
+                    restoredContent.className =
+                        "message-content";
+
+                    restoredContent.innerHTML =
+                        escapeHtml(
+                            originalText
+                        );
+
+
+                    editor.replaceWith(
+                        restoredContent
+                    );
+
+                    editActions.remove();
+
+
+                    const actions =
+                        document.createElement(
+                            "div"
+                        );
+
+                    actions.className =
+                        "message-actions";
+
+
+                    const button =
+                        document.createElement(
+                            "button"
+                        );
+
+                    button.type =
+                        "button";
+
+                    button.className =
+                        "message-action";
+
+                    button.textContent =
+                        "Edit";
+
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            editUserMessage(
+                                messageIndex,
+                                messageElement
+                            );
+                        }
+                    );
+
+
+                    actions.appendChild(
+                        button
+                    );
+
+                    messageElement.appendChild(
+                        actions
+                    );
+                };
+
+
+            cancelButton.addEventListener(
+                "click",
+                cancelEdit
+            );
+
+
+            const saveEdit =
+                function () {
+
+                    const newText =
+                        editor.value.trim();
+
+                    if (!newText) {
+                        editor.focus();
+                        return;
+                    }
+
+
+                    conversationHistory =
+                        conversationHistory.slice(
+                            0,
+                            messageIndex
+                        );
+
+
+                    chatBox.innerHTML =
+                        "";
+
+
+                    conversationHistory.forEach(
+                        function (msg) {
+
+                            if (
+                                msg &&
+                                msg.role &&
+                                typeof msg.content ===
+                                    "string"
+                            ) {
+
+                                addMessageToScreen(
+                                    msg.role,
+                                    msg.content,
+                                    msg.attachment || null
+                                );
+                            }
+                        }
+                    );
+
+
+                    saveCurrentChat();
+
+                    sendMessage(
+                        newText
+                    );
+                };
+
+
+            saveButton.addEventListener(
+                "click",
+                saveEdit
+            );
+
+
+            editor.addEventListener(
+                "keydown",
+                function (event) {
+
+                    if (
+                        event.key === "Enter" &&
+                        !event.shiftKey
+                    ) {
+
+                        event.preventDefault();
+
+                        saveEdit();
+                    }
+
+                    if (
+                        event.key === "Escape"
+                    ) {
+
+                        cancelEdit();
+                    }
+                }
+            );
+        }
+
+
+        /* =========================
+           STOP GENERATION
+        ========================= */
+
+        function stopGeneration() {
+
+            if (
+                !isStreaming ||
+                !activeAbortController
+            ) {
+                return;
+            }
+
+            activeAbortController.abort();
+
+            if (
+                "speechSynthesis"
+                in window
+            ) {
+
+                window.speechSynthesis.cancel();
+            }
+        }
+
+
+        /* =========================
+           BRANCH
+        ========================= */
+
+        async function branchConversation(
+            assistantIndex
+        ) {
+
+            if (isStreaming) {
+                return;
+            }
+
+            if (
+                assistantIndex < 0 ||
+                assistantIndex >=
+                    conversationHistory.length ||
+                !conversationHistory[
+                    assistantIndex
+                ] ||
+                conversationHistory[
+                    assistantIndex
+                ].role !== "assistant"
+            ) {
+                return;
+            }
+
+
+            const branchHistory =
+                conversationHistory.slice(
+                    0,
+                    assistantIndex + 1
+                );
+
+
+            if (
+                !branchHistory.length
+            ) {
                 return;
             }
 
@@ -1960,21 +4053,24 @@
 
                 const response =
                     await fetch(
-                        `${API_URL}/new-chat`,
+                        `${API_URL}/branch`,
                         {
-                            method: "POST",
+                            method:
+                                "POST",
 
                             headers: {
                                 "Content-Type":
                                     "application/json"
                             },
 
-                            credentials: "include",
+                            credentials:
+                                "include",
 
-                            body: JSON.stringify({
-                                history:
-                                    conversationHistory
-                            })
+                            body:
+                                JSON.stringify({
+                                    history:
+                                        branchHistory
+                                })
                         }
                     );
 
@@ -1996,7 +4092,230 @@
                         };
 
 
-                if (!response.ok) {
+                if (
+                    !response.ok
+                ) {
+
+                    throw new Error(
+                        data.error ||
+                        "Branch create failed"
+                    );
+                }
+
+
+                conversationHistory =
+                    Array.isArray(
+                        data.history
+                    )
+                        ? data.history
+                        : branchHistory;
+
+
+                chatBox.innerHTML =
+                    "";
+
+
+                conversationHistory.forEach(
+                    function (msg) {
+
+                        if (
+                            msg &&
+                            msg.role &&
+                            typeof msg.content ===
+                                "string"
+                        ) {
+
+                            addMessageToScreen(
+                                msg.role,
+                                msg.content,
+                                msg.attachment || null
+                            );
+                        }
+                    }
+                );
+
+
+                saveCurrentChat();
+
+                messageInput.focus();
+
+
+            } catch (error) {
+
+                console.error(
+                    "Branch error:",
+                    error
+                );
+
+                alert(
+                    "Branch create nahi hua: " +
+                    error.message
+                );
+            }
+        }
+
+
+        /* =========================
+           REGENERATE
+        ========================= */
+
+        function regenerateResponse(
+            assistantIndex
+        ) {
+
+            if (isStreaming) {
+                return;
+            }
+
+
+            if (
+                assistantIndex <= 0 ||
+                assistantIndex >=
+                    conversationHistory.length ||
+                !conversationHistory[
+                    assistantIndex
+                ] ||
+                conversationHistory[
+                    assistantIndex
+                ].role !== "assistant"
+            ) {
+                return;
+            }
+
+
+            const userMessage =
+                conversationHistory[
+                    assistantIndex - 1
+                ];
+
+
+            if (
+                !userMessage ||
+                userMessage.role !==
+                    "user" ||
+                !String(
+                    userMessage.content
+                ).trim()
+            ) {
+                return;
+            }
+
+
+            const messageText =
+                String(
+                    userMessage.content
+                ).trim();
+
+
+            conversationHistory =
+                conversationHistory.slice(
+                    0,
+                    assistantIndex - 1
+                );
+
+
+            chatBox.innerHTML =
+                "";
+
+
+            conversationHistory.forEach(
+                function (msg) {
+
+                    if (
+                        msg &&
+                        msg.role &&
+                        typeof msg.content ===
+                            "string"
+                    ) {
+
+                        addMessageToScreen(
+                            msg.role,
+                            msg.content,
+                            msg.attachment || null
+                        );
+                    }
+                }
+            );
+
+
+            saveCurrentChat();
+
+            sendMessage(
+                messageText
+            );
+        }
+
+
+        /* =========================
+           NEW CHAT
+        ========================= */
+
+        async function newChat() {
+
+            if (isStreaming) {
+                return;
+            }
+
+
+            if (
+                !loggedInUsername
+            ) {
+
+                loginModal.style.display =
+                    "flex";
+
+                authUsername.focus();
+
+                return;
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        `${API_URL}/new-chat`,
+                        {
+                            method:
+                                "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            credentials:
+                                "include",
+
+                            body:
+                                JSON.stringify({
+                                    history:
+                                        conversationHistory
+                                })
+                        }
+                    );
+
+
+                const contentType =
+                    response.headers.get(
+                        "content-type"
+                    ) || "";
+
+
+                const data =
+                    contentType.includes(
+                        "application/json"
+                    )
+                        ? await response.json()
+                        : {
+                            error:
+                                `Server returned ${response.status}`
+                        };
+
+
+                if (
+                    !response.ok
+                ) {
 
                     throw new Error(
                         data.error ||
@@ -2005,7 +4324,8 @@
                 }
 
 
-                conversationHistory = [];
+                conversationHistory =
+                    [];
 
 
                 localStorage.removeItem(
@@ -2013,9 +4333,11 @@
                 );
 
 
-                chatBox.innerHTML = "";
+                chatBox.innerHTML =
+                    "";
 
-                messageInput.value = "";
+                messageInput.value =
+                    "";
 
 
                 sidebar.classList.remove(
@@ -2032,7 +4354,6 @@
                     "New Chat error:",
                     error
                 );
-
 
                 alert(
                     "New Chat nahi bana: " +
@@ -2053,7 +4374,9 @@
             }
 
 
-            if (!loggedInUsername) {
+            if (
+                !loggedInUsername
+            ) {
 
                 loginModal.style.display =
                     "flex";
@@ -2079,7 +4402,8 @@
                     await fetch(
                         `${API_URL}/history`,
                         {
-                            credentials: "include"
+                            credentials:
+                                "include"
                         }
                     );
 
@@ -2101,7 +4425,9 @@
                         };
 
 
-                if (!response.ok) {
+                if (
+                    !response.ok
+                ) {
 
                     throw new Error(
                         data.error ||
@@ -2118,7 +4444,8 @@
                     !Array.isArray(
                         data.history
                     ) ||
-                    data.history.length === 0
+                    data.history.length ===
+                        0
                 ) {
 
                     sidebarHistory.innerHTML =
@@ -2147,7 +4474,6 @@
                                 chat,
                                 realIndex
                             );
-
                         }
                     );
 
@@ -2178,8 +4504,9 @@
         ) {
 
             const item =
-                document.createElement("div");
-
+                document.createElement(
+                    "div"
+                );
 
             item.className =
                 "sidebar-chat";
@@ -2199,9 +4526,9 @@
 
                         return (
                             msg &&
-                            msg.role === "user"
+                            msg.role ===
+                                "user"
                         );
-
                     }
                 );
 
@@ -2215,7 +4542,9 @@
 
             const currentTitle =
                 chat.title &&
-                String(chat.title).trim()
+                String(
+                    chat.title
+                ).trim()
                     ? chat.title
                     : defaultTitle;
 
@@ -2225,10 +4554,8 @@
                     "span"
                 );
 
-
             title.className =
                 "sidebar-chat-title";
-
 
             title.textContent =
                 currentTitle;
@@ -2239,7 +4566,6 @@
                     "div"
                 );
 
-
             actions.className =
                 "sidebar-actions";
 
@@ -2248,7 +4574,6 @@
                 document.createElement(
                     "button"
                 );
-
 
             renameButton.type =
                 "button";
@@ -2267,7 +4592,6 @@
                 document.createElement(
                     "button"
                 );
-
 
             deleteButton.type =
                 "button";
@@ -2290,9 +4614,13 @@
                 deleteButton
             );
 
-            item.appendChild(title);
+            item.appendChild(
+                title
+            );
 
-            item.appendChild(actions);
+            item.appendChild(
+                actions
+            );
 
 
             item.addEventListener(
@@ -2304,13 +4632,13 @@
                             ".sidebar-chat"
                         )
                         .forEach(
-                            function (chatItem) {
+                            function (
+                                chatItem
+                            ) {
 
-                                chatItem.classList
-                                    .remove(
-                                        "active"
-                                    );
-
+                                chatItem.classList.remove(
+                                    "active"
+                                );
                             }
                         );
 
@@ -2320,7 +4648,9 @@
                     );
 
 
-                    openHistoryChat(chat);
+                    openHistoryChat(
+                        chat
+                    );
 
 
                     sidebar.classList.remove(
@@ -2332,7 +4662,9 @@
 
             renameButton.addEventListener(
                 "click",
-                async function (event) {
+                async function (
+                    event
+                ) {
 
                     event.preventDefault();
 
@@ -2346,7 +4678,9 @@
                         );
 
 
-                    if (newName === null) {
+                    if (
+                        newName === null
+                    ) {
                         return;
                     }
 
@@ -2355,7 +4689,9 @@
                         newName.trim();
 
 
-                    if (!trimmedName) {
+                    if (
+                        !trimmedName
+                    ) {
 
                         alert(
                             "Naam empty nahi ho sakta."
@@ -2371,18 +4707,22 @@
                             await fetch(
                                 `${API_URL}/history/${realIndex}/rename`,
                                 {
-                                    method: "POST",
+                                    method:
+                                        "POST",
 
                                     headers: {
                                         "Content-Type":
                                             "application/json"
                                     },
 
-                                    credentials: "include",
+                                    credentials:
+                                        "include",
 
-                                     body: JSON.stringify({
-    title: trimmedName
-})
+                                    body:
+                                        JSON.stringify({
+                                            title:
+                                                trimmedName
+                                        })
                                 }
                             );
 
@@ -2391,7 +4731,9 @@
                             await response.json();
 
 
-                        if (!response.ok) {
+                        if (
+                            !response.ok
+                        ) {
 
                             throw new Error(
                                 result.error ||
@@ -2416,7 +4758,9 @@
 
             deleteButton.addEventListener(
                 "click",
-                async function (event) {
+                async function (
+                    event
+                ) {
 
                     event.preventDefault();
 
@@ -2429,7 +4773,9 @@
                         );
 
 
-                    if (!confirmDelete) {
+                    if (
+                        !confirmDelete
+                    ) {
                         return;
                     }
 
@@ -2440,8 +4786,11 @@
                             await fetch(
                                 `${API_URL}/history/${realIndex}`,
                                 {
-                                    method: "DELETE",
-                                    credentials: "include"
+                                    method:
+                                        "DELETE",
+
+                                    credentials:
+                                        "include"
                                 }
                             );
 
@@ -2450,7 +4799,9 @@
                             await response.json();
 
 
-                        if (!response.ok) {
+                        if (
+                            !response.ok
+                        ) {
 
                             throw new Error(
                                 result.error ||
@@ -2473,56 +4824,14 @@
             );
 
 
-            sidebarHistory.appendChild(item);
-        }
-
-
-        /* =========================
-           OPEN OLD CHAT
-        ========================= */
-
-        function openHistoryChat(chat) {
-
-            conversationHistory =
-                Array.isArray(
-                    chat.messages
-                )
-                    ? chat.messages
-                    : [];
-
-
-            chatBox.innerHTML = "";
-
-
-            conversationHistory.forEach(
-                function (message) {
-
-                    if (
-                        !message ||
-                        !message.role
-                    ) {
-                        return;
-                    }
-
-
-                    addMessageToScreen(
-                        message.role,
-                        message.content || ""
-                    );
-                }
+            sidebarHistory.appendChild(
+                item
             );
-
-
-            saveCurrentChat();
-
-
-            chatBox.scrollTop =
-                chatBox.scrollHeight;
         }
 
 
         /* =========================
-           SEARCH
+           HISTORY SEARCH
         ========================= */
 
         historySearch.addEventListener(
@@ -2540,7 +4849,9 @@
                         ".sidebar-chat"
                     )
                     .forEach(
-                        function (chatItem) {
+                        function (
+                            chatItem
+                        ) {
 
                             const text =
                                 chatItem.innerText
@@ -2548,7 +4859,9 @@
 
 
                             chatItem.style.display =
-                                text.includes(searchText)
+                                text.includes(
+                                    searchText
+                                )
                                     ? "flex"
                                     : "none";
                         }
@@ -2561,14 +4874,17 @@
             "click",
             function () {
 
-                historySearch.value = "";
+                historySearch.value =
+                    "";
 
                 document
                     .querySelectorAll(
                         ".sidebar-chat"
                     )
                     .forEach(
-                        function (chatItem) {
+                        function (
+                            chatItem
+                        ) {
 
                             chatItem.style.display =
                                 "flex";
@@ -2579,30 +4895,261 @@
 
 
         /* =========================
+           ATTACHMENT MENU
+        ========================= */
+
+        attachButton.addEventListener(
+            "click",
+            function (event) {
+
+                event.stopPropagation();
+
+                const isOpen =
+                    attachMenu.classList.toggle(
+                        "open"
+                    );
+
+                attachMenu.setAttribute(
+                    "aria-hidden",
+                    String(
+                        !isOpen
+                    )
+                );
+            }
+        );
+
+
+        uploadFilesOption.addEventListener(
+            "click",
+            function () {
+
+                attachMenu.classList.remove(
+                    "open"
+                );
+
+                attachMenu.setAttribute(
+                    "aria-hidden",
+                    "true"
+                );
+
+                fileInput.click();
+            }
+        );
+
+
+        document.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    !event.target.closest(
+                        ".attach-wrap"
+                    )
+                ) {
+
+                    attachMenu.classList.remove(
+                        "open"
+                    );
+
+                    attachMenu.setAttribute(
+                        "aria-hidden",
+                        "true"
+                    );
+                }
+            }
+        );
+
+
+        document.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (
+                    event.key === "Escape"
+                ) {
+
+                    attachMenu.classList.remove(
+                        "open"
+                    );
+
+                    attachMenu.setAttribute(
+                        "aria-hidden",
+                        "true"
+                    );
+                }
+            }
+        );
+
+
+        /* =========================
+           FILE INPUT
+        ========================= */
+
+        fileInput.addEventListener(
+            "change",
+            function () {
+
+                const file =
+                    fileInput.files &&
+                    fileInput.files[0];
+
+
+                if (!file) {
+
+                    selectedAttachment =
+                        null;
+
+                    selectedFile.style.display =
+                        "none";
+
+                    selectedFile.textContent =
+                        "";
+
+                    return;
+                }
+
+
+                if (
+                    !file.type.startsWith(
+                        "image/"
+                    )
+                ) {
+
+                    selectedAttachment =
+                        null;
+
+                    fileInput.value =
+                        "";
+
+                    selectedFile.style.display =
+                        "block";
+
+                    selectedFile.textContent =
+                        "⚠️ Abhi sirf image files supported hain.";
+
+                    return;
+                }
+
+
+                if (
+                    file.size >
+                    8 * 1024 * 1024
+                ) {
+
+                    selectedAttachment =
+                        null;
+
+                    fileInput.value =
+                        "";
+
+                    selectedFile.style.display =
+                        "block";
+
+                    selectedFile.textContent =
+                        "⚠️ Image 8 MB se chhoti honi chahiye.";
+
+                    return;
+                }
+
+
+                const reader =
+                    new FileReader();
+
+
+                reader.onload =
+                    function () {
+
+                        const dataUrl =
+                            String(
+                                reader.result ||
+                                ""
+                            );
+
+
+                        selectedAttachment =
+                            {
+                                name:
+                                    file.name,
+
+                                mimeType:
+                                    file.type,
+
+                                dataUrl:
+                                    dataUrl
+                            };
+
+
+                        selectedFile.textContent =
+                            "📎 " +
+                            file.name;
+
+                        selectedFile.style.display =
+                            "block";
+                    };
+
+
+                reader.onerror =
+                    function () {
+
+                        selectedAttachment =
+                            null;
+
+                        selectedFile.style.display =
+                            "block";
+
+                        selectedFile.textContent =
+                            "⚠️ Image read nahi ho paayi.";
+                    };
+
+
+                reader.readAsDataURL(
+                    file
+                );
+            }
+        );
+
+
+        /* =========================
            BUTTON EVENTS
         ========================= */
 
         sendButton.addEventListener(
             "click",
-            sendMessage
+            function () {
+                sendMessage();
+            }
+        );
+
+
+        stopButton.addEventListener(
+            "click",
+            function () {
+                stopGeneration();
+            }
         );
 
 
         newChatButton.addEventListener(
             "click",
-            newChat
+            function () {
+                newChat();
+            }
         );
 
 
         sidebarNewChat.addEventListener(
             "click",
-            newChat
+            function () {
+                newChat();
+            }
         );
 
 
         historyButton.addEventListener(
             "click",
-            showSidebar
+            function () {
+                showSidebar();
+            }
         );
 
 
@@ -2641,6 +5188,8 @@
         /* =========================
            START
         ========================= */
+
+        updateAuthMode();
 
         checkLoginStatus();
 
