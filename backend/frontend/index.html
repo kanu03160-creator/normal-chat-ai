@@ -4336,6 +4336,22 @@
                     : defaultTitle;
 
 
+            // Search the chat title and the full visible conversation
+            // content, not just the title shown in the sidebar.
+            const searchableText = [
+                currentTitle,
+                ...messages.map(function (msg) {
+                    return msg && typeof msg.content === "string"
+                        ? msg.content
+                        : "";
+                })
+            ]
+                .join(" ")
+                .toLowerCase();
+
+            item.dataset.searchText = searchableText;
+
+
             const title =
                 document.createElement(
                     "span"
@@ -4659,8 +4675,8 @@
                         function (chatItem) {
 
                             const text =
-                                chatItem.innerText
-                                    .toLowerCase();
+                                chatItem.dataset.searchText ||
+                                chatItem.innerText.toLowerCase();
 
 
                             chatItem.style.display =
