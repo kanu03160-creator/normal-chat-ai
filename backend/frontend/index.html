@@ -4394,7 +4394,26 @@
             renameButton.textContent =
                 "✏️";
 
+            const pinButton =
+    document.createElement(
+        "button"
+    );
 
+pinButton.type =
+    "button";
+
+pinButton.className =
+    "sidebar-pin";
+
+pinButton.title =
+    chat.pinned
+        ? "Unpin"
+        : "Pin";
+
+pinButton.textContent =
+    chat.pinned
+        ? "📌"
+        : "📍";
             const deleteButton =
                 document.createElement(
                     "button"
@@ -4415,12 +4434,16 @@
 
 
             actions.appendChild(
-                renameButton
-            );
+    renameButton
+);
 
-            actions.appendChild(
-                deleteButton
-            );
+actions.appendChild(
+    pinButton
+);
+
+actions.appendChild(
+    deleteButton
+);
 
             item.appendChild(title);
 
@@ -4544,7 +4567,59 @@
                     }
                 }
             );
+            pinButton.addEventListener(
+    "click",
+    async function (event) {
 
+        event.preventDefault();
+        event.stopPropagation();
+
+        try {
+
+            const response =
+                await fetch(
+                    `${API_URL}/history/${realIndex}/pin`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        credentials:
+                            "include",
+
+                        body:
+                            JSON.stringify({
+                                pinned:
+                                    !chat.pinned
+                            })
+                    }
+                );
+
+            const result =
+                await response.json();
+
+            if (!response.ok) {
+
+                throw new Error(
+                    result.error ||
+                    "Pin failed"
+                );
+            }
+
+            await showSidebar();
+
+        } catch (error) {
+
+            alert(
+                "Pin nahi hua: " +
+                error.message
+            );
+        }
+    }
+);
 
             deleteButton.addEventListener(
                 "click",

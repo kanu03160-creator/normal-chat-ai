@@ -18,7 +18,7 @@ def get_db_connection():
 
 
 # ==========================================
-# CREATE TABLE
+# CREATE / UPDATE TABLE
 # ==========================================
 
 def init_history_table():
@@ -37,6 +37,13 @@ def init_history_table():
                     messages JSONB NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
+            """)
+
+            # Add pinned column to existing databases
+            cursor.execute("""
+                ALTER TABLE chat_history
+                ADD COLUMN IF NOT EXISTS pinned BOOLEAN
+                NOT NULL DEFAULT FALSE
             """)
 
         conn.commit()
@@ -64,7 +71,7 @@ def load_history(username):
         with conn.cursor() as cursor:
 
             cursor.execute("""
-                SELECT id, title, messages
+                SELECT id, title, messages, pinned
                 FROM chat_history
                 WHERE username = %s
                 ORDER BY id ASC
@@ -77,8 +84,10 @@ def load_history(username):
             for row in rows:
 
                 history.append({
+                    "id": row[0],
                     "title": row[1],
-                    "messages": row[2]
+                    "messages": row[2],
+                    "pinned": bool(row[3])
                 })
 
             return history
@@ -124,8 +133,8 @@ def add_chat(messages, username, title=None):
 
             cursor.execute("""
                 INSERT INTO chat_history
-                (username, title, messages)
-                VALUES (%s, %s, %s)
+                (username, title, messages, pinned)
+                VALUES (%s, %s, %s, FALSE)
             """, (
                 username,
                 title,
@@ -251,6 +260,67 @@ def rename_chat(index, title, username):
                 AND username = %s
             """, (
                 title,
+                chat_id,
+                username
+            ))
+
+        conn.commit()
+
+        return True
+
+    finally:
+
+        conn.close()
+
+
+# ==========================================
+# PIN / UNPIN CHAT
+# ==========================================
+
+def pin_chat(index, pinned, username):
+
+    if not username:
+        return False
+
+    history = load_history(username)
+
+    if index < 0 or index >= len(history):
+        return False
+
+    init_history_table()
+
+    conn = get_db_connection()
+
+    try:
+
+        with conn.cursor() as cursor:
+
+            cursor.execute("""
+                SELECT id
+                FROM chat_history
+                WHERE username = %s
+                ORDER BY id ASC
+                OFFSET %s
+                LIMIT 1
+            """, (
+                username,
+                index
+            ))
+
+            row = cursor.fetchone()
+
+            if not row:
+                return False
+
+            chat_id = row[0]
+
+            cursor.execute("""
+                UPDATE chat_history
+                SET pinned = %s
+                WHERE id = %s
+                AND username = %s
+            """, (
+                bool(pinned),
                 chat_id,
                 username
             ))

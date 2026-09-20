@@ -35,7 +35,8 @@ from chat_history import (
     add_chat,
     load_history,
     delete_chat,
-    rename_chat
+    rename_chat,
+    pin_chat
 )
 
 from memory import (
@@ -2808,7 +2809,84 @@ def rename_history(index):
             "error":
             "Internal server error"
         }), 500
+# ==========================================
+# PIN / UNPIN HISTORY
+# ==========================================
 
+@app.route(
+    "/history/<int:index>/pin",
+    methods=["POST", "PUT"]
+)
+def pin_history(index):
+
+    username = session.get(
+        "username"
+    )
+
+    if not username:
+
+        return jsonify({
+            "error":
+            "Login required"
+        }), 401
+
+    try:
+
+        data = request.get_json(
+            silent=True
+        ) or {}
+
+        pinned = data.get(
+            "pinned",
+            True
+        )
+
+        if isinstance(
+            pinned,
+            str
+        ):
+
+            pinned = (
+                pinned.lower()
+                in ("true", "1", "yes", "on")
+            )
+
+        success = pin_chat(
+            index,
+            bool(pinned),
+            username
+        )
+
+        if not success:
+
+            return jsonify({
+                "error":
+                "Chat not found"
+            }), 404
+
+        return jsonify({
+            "message":
+            (
+                "Chat pinned"
+                if pinned
+                else
+                "Chat unpinned"
+            ),
+            "pinned":
+            bool(pinned)
+        })
+
+    except Exception as error:
+
+        print(
+            "Pin history error:",
+            repr(error)
+        )
+
+        return jsonify({
+            "error":
+            "Internal server error"
+        }), 500
 
 # ==========================================
 # DATABASE STARTUP
