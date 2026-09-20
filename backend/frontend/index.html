@@ -654,7 +654,38 @@
             font-size: 14px;
             padding: 5px;
         }
+        .sidebar-folder-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 8px;
+    margin: 10px 0 4px;
+    border-bottom: 1px solid #2b2b2b;
+    color: #ddd;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+}
 
+.sidebar-folder-header:first-child {
+    margin-top: 0;
+}
+
+.sidebar-folder-header span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-folder-header .folder-count {
+    color: #777;
+    font-size: 12px;
+}
+
+.sidebar-folder-items.collapsed {
+    display: none;
+}
         .sidebar-chat {
             display: flex;
             justify-content: space-between;
@@ -4244,28 +4275,168 @@
                 }
 
 
-                data.history
-                    .slice()
-                    .reverse()
-                    .forEach(
-                        function (
-                            chat,
-                            reverseIndex
-                        ) {
+                const sortedHistory =
+    data.history
+        .map(function (chat, index) {
 
-                            const realIndex =
-                                data.history.length -
-                                1 -
-                                reverseIndex;
+            return {
+                ...chat,
+                _historyIndex: index
+            };
+
+        })
+        .sort(function (a, b) {
+
+            if (
+                Boolean(a.pinned) !==
+                Boolean(b.pinned)
+            ) {
+
+                return a.pinned
+                    ? -1
+                    : 1;
+            }
+
+            return b._historyIndex -
+                a._historyIndex;
+        });
 
 
-                            createHistoryItem(
-                                chat,
-                                realIndex
-                            );
+const folders = {};
 
-                        }
+sortedHistory.forEach(
+    function (chat) {
+
+        const folder =
+            String(
+                chat.folder ||
+                "General"
+            ).trim() ||
+            "General";
+
+        if (!folders[folder]) {
+
+            folders[folder] = [];
+        }
+
+        folders[folder].push(chat);
+    }
+);
+
+
+const folderNames =
+    Object.keys(folders);
+
+
+folderNames.sort(
+    function (a, b) {
+
+        if (a === "General") {
+            return -1;
+        }
+
+        if (b === "General") {
+            return 1;
+        }
+
+        return a.localeCompare(
+            b
+        );
+    }
+);
+
+
+folderNames.forEach(
+    function (folderName) {
+
+        const folderHeader =
+            document.createElement(
+                "div"
+            );
+
+        folderHeader.className =
+            "sidebar-folder-header";
+
+        const folderTitle =
+            document.createElement(
+                "span"
+            );
+
+        folderTitle.textContent =
+            "📁 " + folderName;
+
+
+        const count =
+            document.createElement(
+                "span"
+            );
+
+        count.className =
+            "folder-count";
+
+        count.textContent =
+            folders[folderName].length;
+
+
+        folderHeader.appendChild(
+            folderTitle
+        );
+
+        folderHeader.appendChild(
+            count
+        );
+
+
+        const folderItems =
+            document.createElement(
+                "div"
+            );
+
+        folderItems.className =
+            "sidebar-folder-items";
+
+
+        folders[folderName].forEach(
+            function (chat) {
+
+                createHistoryItem(
+                    chat,
+                    chat._historyIndex
+                );
+
+                const latestItem =
+                    sidebarHistory.lastElementChild;
+
+                if (latestItem) {
+
+                    folderItems.appendChild(
+                        latestItem
                     );
+                }
+            }
+        );
+
+
+        folderHeader.addEventListener(
+            "click",
+            function () {
+
+                folderItems.classList.toggle(
+                    "collapsed"
+                );
+            }
+        );
+
+
+        sidebarHistory.appendChild(
+            folderHeader
+        );
+
+        sidebarHistory.appendChild(
+            folderItems
+        );
+    }
+);
 
 
             } catch (error) {
@@ -4398,7 +4569,22 @@
     document.createElement(
         "button"
     );
+const folderButton =
+    document.createElement(
+        "button"
+    );
 
+folderButton.type =
+    "button";
+
+folderButton.className =
+    "sidebar-folder";
+
+folderButton.title =
+    "Move to folder";
+
+folderButton.textContent =
+    "📁";
 pinButton.type =
     "button";
 
@@ -4439,6 +4625,10 @@ pinButton.textContent =
 
 actions.appendChild(
     pinButton
+);
+
+actions.appendChild(
+    folderButton
 );
 
 actions.appendChild(
@@ -4620,7 +4810,84 @@ actions.appendChild(
         }
     }
 );
+folderButton.addEventListener(
+    "click",
+    async function (event) {
 
+        event.preventDefault();
+        event.stopPropagation();
+
+        const currentFolder =
+            chat.folder || "General";
+
+        const newFolder =
+            prompt(
+                "Folder ka naam:",
+                currentFolder
+            );
+
+        if (newFolder === null) {
+            return;
+        }
+
+        const trimmedFolder =
+            newFolder.trim();
+
+        if (!trimmedFolder) {
+
+            alert(
+                "Folder ka naam empty nahi ho sakta."
+            );
+
+            return;
+        }
+
+        try {
+
+            const response =
+                await fetch(
+                    `${API_URL}/history/${realIndex}/folder`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        credentials:
+                            "include",
+
+                        body:
+                            JSON.stringify({
+                                folder:
+                                    trimmedFolder
+                            })
+                    }
+                );
+
+            const result =
+                await response.json();
+
+            if (!response.ok) {
+
+                throw new Error(
+                    result.error ||
+                    "Folder move failed"
+                );
+            }
+
+            await showSidebar();
+
+        } catch (error) {
+
+            alert(
+                "Folder move nahi hua: " +
+                error.message
+            );
+        }
+    }
+);
             deleteButton.addEventListener(
                 "click",
                 async function (event) {
@@ -4969,9 +5236,21 @@ actions.appendChild(
 
 
         historyButton.addEventListener(
-            "click",
-            showSidebar
-        );
+    "click",
+    async function () {
+
+        if (
+            sidebar.classList.contains("open")
+        ) {
+
+            sidebar.classList.remove("open");
+
+            return;
+        }
+
+        await showSidebar();
+    }
+);
 
 
         closeSidebar.addEventListener(

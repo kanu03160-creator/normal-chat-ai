@@ -39,11 +39,18 @@ def init_history_table():
                 )
             """)
 
-            # Add pinned column to existing databases
+            # Pin support
             cursor.execute("""
                 ALTER TABLE chat_history
                 ADD COLUMN IF NOT EXISTS pinned BOOLEAN
                 NOT NULL DEFAULT FALSE
+            """)
+
+            # Folder support
+            cursor.execute("""
+                ALTER TABLE chat_history
+                ADD COLUMN IF NOT EXISTS folder TEXT
+                NOT NULL DEFAULT 'General'
             """)
 
         conn.commit()
@@ -71,7 +78,12 @@ def load_history(username):
         with conn.cursor() as cursor:
 
             cursor.execute("""
-                SELECT id, title, messages, pinned
+                SELECT
+                    id,
+                    title,
+                    messages,
+                    pinned,
+                    folder
                 FROM chat_history
                 WHERE username = %s
                 ORDER BY id ASC
@@ -87,7 +99,8 @@ def load_history(username):
                     "id": row[0],
                     "title": row[1],
                     "messages": row[2],
-                    "pinned": bool(row[3])
+                    "pinned": bool(row[3]),
+                    "folder": row[4] or "General"
                 })
 
             return history
@@ -101,7 +114,12 @@ def load_history(username):
 # ADD CHAT
 # ==========================================
 
-def add_chat(messages, username, title=None):
+def add_chat(
+    messages,
+    username,
+    title=None,
+    folder="General"
+):
 
     if not messages or not username:
         return
@@ -125,6 +143,15 @@ def add_chat(messages, username, title=None):
 
         title = str(title)[:40]
 
+    folder = str(
+        folder or "General"
+    ).strip()
+
+    if not folder:
+        folder = "General"
+
+    folder = folder[:40]
+
     conn = get_db_connection()
 
     try:
@@ -133,15 +160,28 @@ def add_chat(messages, username, title=None):
 
             cursor.execute("""
                 INSERT INTO chat_history
-                (username, title, messages, pinned)
-                VALUES (%s, %s, %s, FALSE)
+                (
+                    username,
+                    title,
+                    messages,
+                    pinned,
+                    folder
+                )
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    FALSE,
+                    %s
+                )
             """, (
                 username,
                 title,
                 json.dumps(
                     messages,
                     ensure_ascii=False
-                )
+                ),
+                folder
             ))
 
         conn.commit()
@@ -321,6 +361,76 @@ def pin_chat(index, pinned, username):
                 AND username = %s
             """, (
                 bool(pinned),
+                chat_id,
+                username
+            ))
+
+        conn.commit()
+
+        return True
+
+    finally:
+
+        conn.close()
+
+
+# ==========================================
+# MOVE CHAT TO FOLDER
+# ==========================================
+
+def move_chat(index, folder, username):
+
+    if not username:
+        return False
+
+    folder = str(
+        folder or "General"
+    ).strip()
+
+    if not folder:
+        folder = "General"
+
+    folder = folder[:40]
+
+    history = load_history(username)
+
+    if index < 0 or index >= len(history):
+        return False
+
+    init_history_table()
+
+    conn = get_db_connection()
+
+    try:
+
+        with conn.cursor() as cursor:
+
+            cursor.execute("""
+                SELECT id
+                FROM chat_history
+                WHERE username = %s
+                ORDER BY id ASC
+                OFFSET %s
+                LIMIT 1
+            """, (
+                username,
+                index
+            ))
+
+            row = cursor.fetchone()
+
+            if not row:
+                return False
+
+            chat_id = row[0]
+
+            cursor.execute("""
+                UPDATE chat_history
+                SET folder = %s
+                WHERE id = %s
+                AND username = %s
+            """, (
+                folder,
                 chat_id,
                 username
             ))

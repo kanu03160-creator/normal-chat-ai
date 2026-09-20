@@ -36,7 +36,8 @@ from chat_history import (
     load_history,
     delete_chat,
     rename_chat,
-    pin_chat
+    pin_chat,
+    move_chat
 )
 
 from memory import (
@@ -2887,7 +2888,79 @@ def pin_history(index):
             "error":
             "Internal server error"
         }), 500
+# ==========================================
+# MOVE CHAT TO FOLDER
+# ==========================================
 
+@app.route(
+    "/history/<int:index>/folder",
+    methods=["POST", "PUT"]
+)
+def move_history_folder(index):
+
+    username = session.get(
+        "username"
+    )
+
+    if not username:
+
+        return jsonify({
+            "error":
+            "Login required"
+        }), 401
+
+    try:
+
+        data = request.get_json(
+            silent=True
+        ) or {}
+
+        folder = data.get(
+            "folder",
+            "General"
+        )
+
+        folder = str(
+            folder
+        ).strip()
+
+        if not folder:
+
+            folder = "General"
+
+        folder = folder[:40]
+
+        success = move_chat(
+            index,
+            folder,
+            username
+        )
+
+        if not success:
+
+            return jsonify({
+                "error":
+                "Chat not found"
+            }), 404
+
+        return jsonify({
+            "message":
+            "Chat moved successfully",
+            "folder":
+            folder
+        })
+
+    except Exception as error:
+
+        print(
+            "Move folder error:",
+            repr(error)
+        )
+
+        return jsonify({
+            "error":
+            "Internal server error"
+        }), 500
 # ==========================================
 # DATABASE STARTUP
 # ==========================================
