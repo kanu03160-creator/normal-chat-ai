@@ -725,6 +725,9 @@
         }
 
         .sidebar-rename,
+        .sidebar-pin,
+        .sidebar-folder,
+        .sidebar-archive,
         .sidebar-delete {
             width: 30px;
             height: 30px;
@@ -736,6 +739,9 @@
         }
 
         .sidebar-rename:hover,
+        .sidebar-pin:hover,
+        .sidebar-folder:hover,
+        .sidebar-archive:hover,
         .sidebar-delete:hover {
             background: #333;
             color: #fff;
@@ -1194,6 +1200,246 @@
                 padding: 0 5px;
             }
         }
+
+
+        /* =========================
+           VISION 4 FINAL UI POLISH
+        ========================= */
+
+        ::selection {
+            background: #3a3a3a;
+            color: #fff;
+        }
+
+        html {
+            scrollbar-color: #333 #000;
+            scrollbar-width: thin;
+        }
+
+        button,
+        input,
+        textarea,
+        select {
+            font-family: inherit;
+        }
+
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: 2px solid #666;
+            outline-offset: 2px;
+        }
+
+        .header {
+            background: rgba(12, 12, 12, 0.96);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.025);
+        }
+
+        .header h1 {
+            letter-spacing: -0.3px;
+        }
+
+        .header button,
+        #attachButton,
+        #micButton,
+        #stopButton {
+            transition:
+                background 0.16s ease,
+                border-color 0.16s ease,
+                color 0.16s ease,
+                transform 0.12s ease,
+                opacity 0.16s ease;
+        }
+
+        .chat-box {
+            padding-top: 28px;
+            padding-bottom: 28px;
+        }
+
+        .message {
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+        }
+
+        .user {
+            background: #252525;
+        }
+
+        .bot {
+            background: #141414;
+        }
+
+        .message h1,
+        .message h2,
+        .message h3 {
+            margin-top: 8px;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .message pre {
+            max-width: 100%;
+            overflow-x: auto;
+            border-radius: 10px;
+        }
+
+        .quick-prompts {
+            background: linear-gradient(
+                to top,
+                #000 78%,
+                rgba(0, 0, 0, 0)
+            );
+            padding-top: 16px;
+        }
+
+        .quick-prompt {
+            transition:
+                background 0.16s ease,
+                border-color 0.16s ease,
+                transform 0.12s ease;
+        }
+
+        .quick-prompt:active {
+            transform: translateY(1px);
+        }
+
+        .input-area {
+            background: rgba(0, 0, 0, 0.97) !important;
+            border-top-color: #202020;
+            padding-left: 18px;
+            padding-right: 18px;
+        }
+
+        #message {
+            transition:
+                border-color 0.16s ease,
+                background 0.16s ease,
+                box-shadow 0.16s ease;
+        }
+
+        #message:focus {
+            border-color: #5a5a5a;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.035);
+        }
+
+        #sendButton {
+            transition:
+                background 0.16s ease,
+                transform 0.12s ease,
+                opacity 0.16s ease;
+        }
+
+        #sendButton:not(:disabled):active,
+        #attachButton:active,
+        #micButton:active {
+            transform: scale(0.96);
+        }
+
+        .sidebar {
+            background: #101010;
+            box-shadow: 16px 0 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar-chat {
+            transition:
+                background 0.14s ease,
+                border-color 0.14s ease,
+                transform 0.12s ease;
+        }
+
+        .sidebar-chat:active {
+            transform: scale(0.995);
+        }
+
+        .sidebar-folder-header {
+            border-bottom-color: #252525;
+        }
+
+        #historySearch:focus {
+            border-color: #555;
+            background: #1c1c1c;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.025);
+        }
+
+        .login-modal {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        @media (max-width: 600px) {
+            .header {
+                padding: 0 8px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .header-buttons {
+                gap: 3px;
+            }
+
+            .header button {
+                min-height: 40px;
+                padding: 8px 9px;
+            }
+
+            .chat-box {
+                padding: 12px 8px 18px;
+            }
+
+            .message {
+                max-width: 94%;
+                border-radius: 13px;
+            }
+
+            .quick-prompts {
+                padding: 11px 8px 9px;
+                gap: 6px;
+            }
+
+            .quick-prompt {
+                padding: 8px 11px;
+                font-size: 12px;
+            }
+
+            .input-area {
+                padding: 7px;
+                gap: 6px;
+            }
+
+            #message {
+                padding: 0 13px;
+                border-radius: 12px;
+            }
+
+            #attachButton,
+            #micButton {
+                flex: 0 0 46px;
+                width: 46px;
+                min-width: 46px;
+                height: 46px;
+            }
+
+            #sendButton,
+            #stopButton {
+                border-radius: 12px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+            }
+        }
+
     </style>
 </head>
 
@@ -4276,16 +4522,34 @@
 
 
                 const sortedHistory =
-    data.history
-        .map(function (chat, index) {
+                    data.history
+                        .map(function (chat, index) {
 
-            return {
-                ...chat,
-                _historyIndex: index
-            };
+                            return {
+                                ...chat,
+                                _historyIndex: index
+                            };
 
-        })
-        .sort(function (a, b) {
+                        })
+                        .filter(function (chat) {
+                            return !chat.archived;
+                        })
+                        .sort(function (a, b) {
+
+                            if (
+                                Boolean(a.pinned) !==
+                                Boolean(b.pinned)
+                            ) {
+
+                                return a.pinned
+                                    ? -1
+                                    : 1;
+                            }
+
+                            return b._historyIndex -
+                                a._historyIndex;
+                        });
+        sort(function (a, b) {
 
             if (
                 Boolean(a.pinned) !==
@@ -4403,7 +4667,6 @@ folderNames.forEach(
                     chat,
                     chat._historyIndex
                 );
-
                 const latestItem =
                     sidebarHistory.lastElementChild;
 
@@ -4564,42 +4827,68 @@ folderNames.forEach(
 
             renameButton.textContent =
                 "✏️";
-
             const pinButton =
-    document.createElement(
-        "button"
-    );
-const folderButton =
-    document.createElement(
-        "button"
-    );
+                document.createElement(
+                    "button"
+                );
 
-folderButton.type =
-    "button";
+            pinButton.type =
+                "button";
 
-folderButton.className =
-    "sidebar-folder";
+            pinButton.className =
+                "sidebar-pin";
 
-folderButton.title =
-    "Move to folder";
+            pinButton.title =
+                chat.pinned
+                    ? "Unpin"
+                    : "Pin";
 
-folderButton.textContent =
-    "📁";
-pinButton.type =
-    "button";
+            pinButton.textContent =
+                chat.pinned
+                    ? "📌"
+                    : "📍";
 
-pinButton.className =
-    "sidebar-pin";
 
-pinButton.title =
-    chat.pinned
-        ? "Unpin"
-        : "Pin";
+            const folderButton =
+                document.createElement(
+                    "button"
+                );
 
-pinButton.textContent =
-    chat.pinned
-        ? "📌"
-        : "📍";
+            folderButton.type =
+                "button";
+
+            folderButton.className =
+                "sidebar-folder";
+
+            folderButton.title =
+                "Move to folder";
+
+            folderButton.textContent =
+                "📁";
+
+
+            const archiveButton =
+                document.createElement(
+                    "button"
+                );
+
+            archiveButton.type =
+                "button";
+
+            archiveButton.className =
+                "sidebar-archive";
+
+            archiveButton.title =
+                chat.archived
+                    ? "Restore"
+                    : "Archive";
+
+            archiveButton.textContent =
+                chat.archived
+                    ? "↩️"
+                    : "🗄️";
+
+
             const deleteButton =
                 document.createElement(
                     "button"
@@ -4629,6 +4918,10 @@ actions.appendChild(
 
 actions.appendChild(
     folderButton
+);
+
+actions.appendChild(
+    archiveButton
 );
 
 actions.appendChild(
@@ -4883,6 +5176,59 @@ folderButton.addEventListener(
 
             alert(
                 "Folder move nahi hua: " +
+                error.message
+            );
+        }
+    }
+);
+archiveButton.addEventListener(
+    "click",
+    async function (event) {
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        try {
+
+            const response =
+                await fetch(
+                    `${API_URL}/history/${realIndex}/archive`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        credentials:
+                            "include",
+
+                        body:
+                            JSON.stringify({
+                                archived:
+                                    !chat.archived
+                            })
+                    }
+                );
+
+            const result =
+                await response.json();
+
+            if (!response.ok) {
+
+                throw new Error(
+                    result.error ||
+                    "Archive failed"
+                );
+            }
+
+            await showSidebar();
+
+        } catch (error) {
+
+            alert(
+                "Archive nahi hua: " +
                 error.message
             );
         }

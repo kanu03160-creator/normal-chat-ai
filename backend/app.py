@@ -6,11 +6,9 @@ import re
 import os
 import threading
 import time
-from datetime import datetime, timezone, timedelta
 import json as json_module
 import base64
 import csv
-import xml.etree.ElementTree as ET
 from io import BytesIO, StringIO
 
 from dotenv import load_dotenv
@@ -35,9 +33,7 @@ from chat_history import (
     add_chat,
     load_history,
     delete_chat,
-    rename_chat,
-    pin_chat,
-    move_chat
+    rename_chat
 )
 
 from memory import (
@@ -1011,10 +1007,34 @@ def get_weather(city):
 # WEB SEARCH
 # ==========================================
 
+def _clean_search_url(url):
+
+    url = str(url or "").strip()
+
+    if not url:
+        return ""
+
+    # DuckDuckGo may return a redirect URL. Extract the real destination.
+    try:
+        parsed = urllib.parse.urlparse(url)
+        query_params = urllib.parse.parse_qs(parsed.query)
+        uddg = query_params.get("uddg")
+
+        if uddg and uddg[0]:
+            url = urllib.parse.unquote(uddg[0])
+    except Exception:
+        pass
+
+    if not url.startswith(("http://", "https://")):
+        return ""
+
+    return url
+
+
 def _search_domain(url):
 
     try:
-        hostname = urllib.parse.urlparse(str(url or "")).netloc.lower()
+        hostname = urllib.parse.urlparse(url).netloc.lower()
         if hostname.startswith("www."):
             hostname = hostname[4:]
         return hostname
@@ -1027,12 +1047,6 @@ def web_search(
     max_results=5
 ):
 
-    """Search current web/news results through Google News RSS.
-
-    Gemini is used only for answer generation; search results are fetched
-    independently so a Gemini Search-grounding quota does not break search.
-    """
-
     try:
 
         query = re.sub(r"\s+", " ", str(query).strip())
@@ -1040,23 +1054,9 @@ def web_search(
         if not query:
             return []
 
-        # Add the current India date for time-sensitive queries so the
-        # RSS search is anchored to today's news rather than older results.
-        ist = timezone(timedelta(hours=5, minutes=30))
-        current_date = datetime.now(ist).strftime("%d %B %Y")
-        current_query = query
-        current_markers = (
-            "latest", "current", "today", "tonight", "recent",
-            "aaj", "ajj", "abhi", "taaza", "taza", "filhaal",
-            "news", "update", "live"
-        )
-        if any(marker in query.lower() for marker in current_markers):
-            current_query = f"{query} {current_date}"
-
         search_url = (
-            "https://news.google.com/rss/search?q="
-            + urllib.parse.quote(current_query)
-            + "&hl=en-IN&gl=IN&ceid=IN:en"
+            "https://html.duckduckgo.com/html/?q="
+            + urllib.parse.quote(query)
         )
 
         req = urllib.request.Request(
@@ -1066,7 +1066,7 @@ def web_search(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/120.0 Safari/537.36",
-                "Accept-Language": "en-IN,en;q=0.9"
+                "Accept-Language": "en-US,en;q=0.9"
             }
         )
 
@@ -1075,51 +1075,75 @@ def web_search(
             timeout=15
         ) as response:
 
-            xml_data = response.read()
+            html = response.read().decode(
+                "utf-8",
+                errors="ignore"
+            )
 
-        root = ET.fromstring(xml_data)
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
 
         results = []
         seen_urls = set()
         seen_titles = set()
 
-        for item in root.findall(".//item"):
+        for result in soup.select(".result"):
 
-            title = (item.findtext("title") or "").strip()
-            url = (item.findtext("link") or "").strip()
-            description = (item.findtext("description") or "").strip()
-            pub_date = (item.findtext("pubDate") or "").strip()
-
-            source_element = item.find("source")
-            source_name = (
-                source_element.text.strip()
-                if source_element is not None and source_element.text
-                else ""
+            title_element = result.select_one(
+                ".result__a"
             )
+
+            snippet_element = result.select_one(
+                ".result__snippet"
+            )
+
+            if not title_element:
+                continue
+
+            title = title_element.get_text(
+                " ",
+                strip=True
+            )
+
+            url = _clean_search_url(
+                title_element.get("href", "")
+            )
+
+            snippet = ""
+
+            if snippet_element:
+                snippet = snippet_element.get_text(
+                    " ",
+                    strip=True
+                )
 
             if not title or not url:
                 continue
 
             normalized_url = url.rstrip("/").lower()
-            normalized_title = re.sub(r"\s+", " ", title.lower())
+            normalized_title = re.sub(
+                r"\s+",
+                " ",
+                title.lower()
+            )
 
-            if normalized_url in seen_urls or normalized_title in seen_titles:
+            # Remove duplicate pages/results.
+            if normalized_url in seen_urls:
+                continue
+
+            if normalized_title in seen_titles:
                 continue
 
             seen_urls.add(normalized_url)
             seen_titles.add(normalized_title)
 
-            # RSS descriptions can contain simple HTML markup.
-            snippet = re.sub(r"<[^>]+>", " ", description)
-            snippet = re.sub(r"\s+", " ", snippet).strip()
-
             results.append({
                 "title": title[:300],
                 "url": url,
                 "domain": _search_domain(url),
-                "snippet": snippet[:800],
-                "source": source_name[:200],
-                "published": pub_date[:100]
+                "snippet": snippet[:800]
             })
 
             if len(results) >= max_results:
@@ -1150,7 +1174,6 @@ def web_search(
 
         return []
 
-
 def format_web_results(results):
 
     if not results:
@@ -1163,18 +1186,17 @@ def format_web_results(results):
         start=1
     ):
 
-        source_line = result.get("source", "")
-        published_line = result.get("published", "")
-
         lines.append(
-            f"{index}. {result['title']}\n"
-            f"Source: {source_line or result.get('domain', '')}\n"
-            f"Published: {published_line}\n"
+            f"{index}. "
+            f"{result['title']}\n"
+            f"Source: {result.get('domain', '')}\n"
             f"URL: {result['url']}\n"
             f"{result['snippet']}"
         )
 
-    return "\n\n".join(lines)
+    return "\n\n".join(
+        lines
+    )
 
 
 def build_smart_search_query(message, history):
@@ -1214,6 +1236,8 @@ def build_smart_search_query(message, history):
 
 
 # ==========================================
+# GEMINI GENERATION HELPER
+# ==========================================
 
 def generate_ai_reply(
     prompt,
@@ -1223,12 +1247,9 @@ def generate_ai_reply(
 
     last_error = None
 
-    # Web search is fetched independently and already included in the prompt.
-    # Do not enable Gemini Search grounding here.
-    models_to_try = [
-        MODEL,
-        FALLBACK_MODEL
-    ]
+    # Google Search grounding is enabled directly inside Gemini.
+    # Do not use the old DuckDuckGo HTML scraper for chat search.
+    models_to_try = [MODEL] if use_web_search else [MODEL, FALLBACK_MODEL]
 
     for current_model in models_to_try:
 
@@ -1261,17 +1282,57 @@ def generate_ai_reply(
                 else:
                     contents = prompt
 
+                config = None
+
+                if use_web_search:
+                    print("GEMINI GOOGLE SEARCH: ENABLED")
+                    config = types.GenerateContentConfig(
+                        tools=[
+                            types.Tool(
+                                google_search=types.GoogleSearch()
+                            )
+                        ]
+                    )
+
                 response = client.models.generate_content(
                     model=current_model,
-                    contents=contents
+                    contents=contents,
+                    config=config
                 )
 
                 if response and response.text:
 
                     if use_web_search:
-                        print(
-                            "WEB RESULTS SENT TO GEMINI: SUCCESS"
-                        )
+                        grounding = None
+                        try:
+                            grounding = (
+                                response.candidates[0].grounding_metadata
+                                if response.candidates
+                                else None
+                            )
+                        except Exception:
+                            grounding = None
+
+                        if grounding:
+                            queries = getattr(
+                                grounding,
+                                "web_search_queries",
+                                None
+                            ) or []
+                            chunks = getattr(
+                                grounding,
+                                "grounding_chunks",
+                                None
+                            ) or []
+                            print(
+                                "GEMINI GOOGLE SEARCH: SUCCESS | "
+                                f"queries={len(queries)} sources={len(chunks)}"
+                            )
+                        else:
+                            print(
+                                "GEMINI GOOGLE SEARCH: RESPONSE RETURNED "
+                                "WITHOUT GROUNDING METADATA"
+                            )
 
                     return response.text.strip()
 
@@ -1306,6 +1367,8 @@ def generate_ai_reply(
     )
 
 
+# ==========================================
+# IMAGE EDITING
 # ==========================================
 
 def is_image_edit_request(message):
@@ -1906,53 +1969,18 @@ def chat():
 
                     break
 
+        # Google Search grounding is handled by Gemini itself.
+        # The old DuckDuckGo scraper is intentionally not called here.
         web_context = ""
 
         if web_search_needed:
-
-            smart_query = build_smart_search_query(
-                message,
-                history_from_frontend
-            )
-
             print(
                 "WEB SEARCH REQUEST DETECTED:",
                 message
             )
-
             print(
-                "SMART SEARCH QUERY:",
-                smart_query
+                "GEMINI GOOGLE SEARCH: REQUEST READY"
             )
-
-            search_results = web_search(
-                smart_query,
-                max_results=5
-            )
-
-            if not search_results and smart_query != message:
-                print(
-                    "SMART SEARCH EMPTY - RETRYING EXACT QUERY"
-                )
-                search_results = web_search(
-                    message,
-                    max_results=5
-                )
-
-            web_context = format_web_results(
-                search_results
-            )
-
-            if web_context:
-                print(
-                    "WEB SEARCH CONTEXT READY:"
-                    , len(search_results),
-                    "sources"
-                )
-            else:
-                print(
-                    "WEB SEARCH CONTEXT EMPTY"
-                )
 
         # ======================================
         # WEATHER DETECTION
@@ -2178,13 +2206,8 @@ def chat():
         # SYSTEM PROMPT
         # ======================================
 
-        ist = timezone(timedelta(hours=5, minutes=30))
-        current_date_ist = datetime.now(ist).strftime("%d %B %Y")
-
         system_prompt = f"""
 You are Normal Chat, a helpful AI assistant.
-
-Current date in India: {current_date_ist}
 
 Rules:
 - Answer the user's question directly and prioritize the exact request.
@@ -2302,11 +2325,8 @@ Conversation continuity rules:
 
 If web search results are provided below:
 
-- Use them as the primary source for current, recent, or time-sensitive facts.
-- For requests containing "today", "aaj", "latest", "current", or similar wording, do not answer from model memory.
-- Use the publication dates in the search results and never replace a current date with an older date.
-- The current India date is {current_date_ist}.
-- If the search results are unavailable or clearly stale, say that live search did not return a reliable current result instead of inventing one.
+- Use them when relevant.
+- Prefer them for current or recent facts.
 - Do not invent facts.
 - Do not dump raw search results.
 - Answer naturally and directly.
@@ -2810,157 +2830,8 @@ def rename_history(index):
             "error":
             "Internal server error"
         }), 500
-# ==========================================
-# PIN / UNPIN HISTORY
-# ==========================================
 
-@app.route(
-    "/history/<int:index>/pin",
-    methods=["POST", "PUT"]
-)
-def pin_history(index):
 
-    username = session.get(
-        "username"
-    )
-
-    if not username:
-
-        return jsonify({
-            "error":
-            "Login required"
-        }), 401
-
-    try:
-
-        data = request.get_json(
-            silent=True
-        ) or {}
-
-        pinned = data.get(
-            "pinned",
-            True
-        )
-
-        if isinstance(
-            pinned,
-            str
-        ):
-
-            pinned = (
-                pinned.lower()
-                in ("true", "1", "yes", "on")
-            )
-
-        success = pin_chat(
-            index,
-            bool(pinned),
-            username
-        )
-
-        if not success:
-
-            return jsonify({
-                "error":
-                "Chat not found"
-            }), 404
-
-        return jsonify({
-            "message":
-            (
-                "Chat pinned"
-                if pinned
-                else
-                "Chat unpinned"
-            ),
-            "pinned":
-            bool(pinned)
-        })
-
-    except Exception as error:
-
-        print(
-            "Pin history error:",
-            repr(error)
-        )
-
-        return jsonify({
-            "error":
-            "Internal server error"
-        }), 500
-# ==========================================
-# MOVE CHAT TO FOLDER
-# ==========================================
-
-@app.route(
-    "/history/<int:index>/folder",
-    methods=["POST", "PUT"]
-)
-def move_history_folder(index):
-
-    username = session.get(
-        "username"
-    )
-
-    if not username:
-
-        return jsonify({
-            "error":
-            "Login required"
-        }), 401
-
-    try:
-
-        data = request.get_json(
-            silent=True
-        ) or {}
-
-        folder = data.get(
-            "folder",
-            "General"
-        )
-
-        folder = str(
-            folder
-        ).strip()
-
-        if not folder:
-
-            folder = "General"
-
-        folder = folder[:40]
-
-        success = move_chat(
-            index,
-            folder,
-            username
-        )
-
-        if not success:
-
-            return jsonify({
-                "error":
-                "Chat not found"
-            }), 404
-
-        return jsonify({
-            "message":
-            "Chat moved successfully",
-            "folder":
-            folder
-        })
-
-    except Exception as error:
-
-        print(
-            "Move folder error:",
-            repr(error)
-        )
-
-        return jsonify({
-            "error":
-            "Internal server error"
-        }), 500
 # ==========================================
 # DATABASE STARTUP
 # ==========================================

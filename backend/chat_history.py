@@ -52,7 +52,12 @@ def init_history_table():
                 ADD COLUMN IF NOT EXISTS folder TEXT
                 NOT NULL DEFAULT 'General'
             """)
-
+            # Archive support
+            cursor.execute("""
+    ALTER TABLE chat_history
+    ADD COLUMN IF NOT EXISTS archived BOOLEAN
+    NOT NULL DEFAULT FALSE
+""")
         conn.commit()
 
     finally:
@@ -79,12 +84,13 @@ def load_history(username):
 
             cursor.execute("""
                 SELECT
-                    id,
-                    title,
-                    messages,
-                    pinned,
-                    folder
-                FROM chat_history
+                id,
+                title,
+                messages,
+                pinned,
+                folder,
+                archived
+            FROM chat_history
                 WHERE username = %s
                 ORDER BY id ASC
             """, (username,))
@@ -100,7 +106,7 @@ def load_history(username):
                     "title": row[1],
                     "messages": row[2],
                     "pinned": bool(row[3]),
-                    "folder": row[4] or "General"
+                    "folder": row[4] or "General",
                 })
 
             return history
@@ -431,6 +437,65 @@ def move_chat(index, folder, username):
                 AND username = %s
             """, (
                 folder,
+                chat_id,
+                username
+            ))
+
+        conn.commit()
+
+        return True
+
+    finally:
+
+        conn.close()
+        # ==========================================
+# ARCHIVE / UNARCHIVE CHAT
+# ==========================================
+
+def archive_chat(index, archived, username):
+
+    if not username:
+        return False
+
+    history = load_history(username)
+
+    if index < 0 or index >= len(history):
+        return False
+
+    init_history_table()
+
+    conn = get_db_connection()
+
+    try:
+
+        with conn.cursor() as cursor:
+
+            cursor.execute("""
+                SELECT id
+                FROM chat_history
+                WHERE username = %s
+                ORDER BY id ASC
+                OFFSET %s
+                LIMIT 1
+            """, (
+                username,
+                index
+            ))
+
+            row = cursor.fetchone()
+
+            if not row:
+                return False
+
+            chat_id = row[0]
+
+            cursor.execute("""
+                UPDATE chat_history
+                SET archived = %s
+                WHERE id = %s
+                AND username = %s
+            """, (
+                bool(archived),
                 chat_id,
                 username
             ))
