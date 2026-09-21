@@ -7,10 +7,6 @@ import os
 import threading
 import time
 import json as json_module
-import base64
-import csv
-from io import BytesIO, StringIO
-
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -42,21 +38,6 @@ from memory import (
 )
 
 from bs4 import BeautifulSoup
-
-try:
-    from pypdf import PdfReader
-except ImportError:
-    PdfReader = None
-
-try:
-    from docx import Document
-except ImportError:
-    Document = None
-
-try:
-    from openpyxl import load_workbook
-except ImportError:
-    load_workbook = None
 
 
 # ==========================================
@@ -124,7 +105,6 @@ if not SECRET_KEY:
 app = Flask(__name__)
 
 app.secret_key = SECRET_KEY
-app.config["MAX_CONTENT_LENGTH"] = 14 * 1024 * 1024
 
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
@@ -187,6 +167,40 @@ def init_db():
                     messages JSONB NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
+            """)
+
+            # Vision 4 chat organization fields.
+            cursor.execute("""
+                ALTER TABLE chat_history
+                ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE
+            """)
+
+            cursor.execute("""
+                ALTER TABLE chat_history
+                ADD COLUMN IF NOT EXISTS folder TEXT DEFAULT 'General'
+            """)
+
+            cursor.execute("""
+                ALTER TABLE chat_history
+                ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE
+            """)
+
+            cursor.execute("""
+                UPDATE chat_history
+                SET pinned = FALSE
+                WHERE pinned IS NULL
+            """)
+
+            cursor.execute("""
+                UPDATE chat_history
+                SET folder = 'General'
+                WHERE folder IS NULL OR TRIM(folder) = ''
+            """)
+
+            cursor.execute("""
+                UPDATE chat_history
+                SET archived = FALSE
+                WHERE archived IS NULL
             """)
 
         conn.commit()
@@ -1245,11 +1259,13 @@ def generate_ai_reply(
     image_data=None
 ):
 
+    response = None
     last_error = None
 
-    # Google Search grounding is enabled directly inside Gemini.
-    # Do not use the old DuckDuckGo HTML scraper for chat search.
-    models_to_try = [MODEL] if use_web_search else [MODEL, FALLBACK_MODEL]
+    models_to_try = [
+        MODEL,
+        FALLBACK_MODEL
+    ]
 
     for current_model in models_to_try:
 
@@ -1258,7 +1274,8 @@ def generate_ai_reply(
             try:
 
                 print(
-                    f"Trying Gemini model: {current_model} "
+                    f"Trying Gemini model: "
+                    f"{current_model} "
                     f"(attempt {attempt + 1})"
                 )
 
@@ -1268,6 +1285,9 @@ def generate_ai_reply(
                         mime_type=image_data["mime_type"]
                     )
 
+                    # Gemini multimodal input: send the real image bytes
+                    # together with the text prompt as one user request.
+                    # This is the SDK-supported image-input format.
                     contents = [
                         prompt,
                         image_part
@@ -1282,57 +1302,19 @@ def generate_ai_reply(
                 else:
                     contents = prompt
 
-                config = None
-
-                if use_web_search:
-                    print("GEMINI GOOGLE SEARCH: ENABLED")
-                    config = types.GenerateContentConfig(
-                        tools=[
-                            types.Tool(
-                                google_search=types.GoogleSearch()
-                            )
-                        ]
-                    )
-
                 response = client.models.generate_content(
                     model=current_model,
-                    contents=contents,
-                    config=config
+                    contents=contents
                 )
 
                 if response and response.text:
 
                     if use_web_search:
-                        grounding = None
-                        try:
-                            grounding = (
-                                response.candidates[0].grounding_metadata
-                                if response.candidates
-                                else None
-                            )
-                        except Exception:
-                            grounding = None
 
-                        if grounding:
-                            queries = getattr(
-                                grounding,
-                                "web_search_queries",
-                                None
-                            ) or []
-                            chunks = getattr(
-                                grounding,
-                                "grounding_chunks",
-                                None
-                            ) or []
-                            print(
-                                "GEMINI GOOGLE SEARCH: SUCCESS | "
-                                f"queries={len(queries)} sources={len(chunks)}"
-                            )
-                        else:
-                            print(
-                                "GEMINI GOOGLE SEARCH: RESPONSE RETURNED "
-                                "WITHOUT GROUNDING METADATA"
-                            )
+                        print(
+                            "WEB RESULTS SENT "
+                            "TO GEMINI: SUCCESS"
+                        )
 
                     return response.text.strip()
 
@@ -1343,274 +1325,33 @@ def generate_ai_reply(
             except Exception as error:
 
                 last_error = error
+
                 error_text = str(error)
 
                 print(
-                    f"Gemini error on {current_model}: {error_text}"
+                    f"Gemini error on "
+                    f"{current_model}: "
+                    f"{error_text}"
                 )
 
                 if (
                     "503" in error_text
-                    or "UNAVAILABLE" in error_text
-                    or "429" in error_text
+                    or
+                    "UNAVAILABLE" in error_text
                 ):
+
                     time.sleep(2)
+
                     continue
 
                 break
 
     if last_error:
+
         raise last_error
 
     raise Exception(
         "Gemini ne response nahi diya."
-    )
-
-
-# ==========================================
-# IMAGE EDITING
-# ==========================================
-
-def is_image_edit_request(message):
-    """Detect requests that ask to modify an attached image."""
-    text = re.sub(r"\s+", " ", str(message or "").strip().lower())
-    if not text:
-        return False
-
-    edit_patterns = [
-        r"\b(change|modify|edit|alter|replace|remove|add|make|turn|convert|transform)\b.*\b(background|color|colour|object|person|sky|hair|dress|shirt|shirt|wall)\b",
-        r"\b(background|bg)\s+(?:ko|to|into|mein|me)\b",
-        r"\b(remove|delete|erase)\b.*\b(from|image|photo|picture)\b",
-        r"\b(add|put|insert)\b.*\b(to|in|on|the image|the photo|the picture)\b",
-        r"\bmake\s+the\s+background\b",
-        r"\bbackground\s+(?:blue|red|green|black|white|yellow|pink|purple|orange|grey|gray)\b",
-        r"\b(?:blue|red|green|black|white|yellow|pink|purple|orange|grey|gray)\s+background\b",
-        r"\bchange\s+.*\bcolor\b",
-        r"\bbackground\s+color\b",
-        r"\bbackground\s+colour\b",
-    ]
-
-    return any(re.search(pattern, text, re.IGNORECASE) for pattern in edit_patterns)
-
-
-def generate_edited_image(image_data, edit_prompt):
-    """Edit an attached image using Gemini 3.1 Flash Image."""
-    if not image_data or not image_data.get("bytes"):
-        raise ValueError("Image attachment is required for image editing.")
-
-    encoded_image = base64.b64encode(image_data["bytes"]).decode("utf-8")
-
-    prompt = (
-        "Edit the provided image according to the user's request. "
-        "Preserve the main subject, composition, proportions, and important details "
-        "unless the user explicitly asks to change them. Make only the requested edit "
-        "and keep the result natural and high quality.\n\n"
-        f"User request: {edit_prompt}"
-    )
-
-    print("IMAGE EDIT REQUEST:", edit_prompt)
-    print("IMAGE EDIT MODEL: gemini-3.1-flash-image")
-
-    interaction = client.interactions.create(
-        model="gemini-3.1-flash-image",
-        input=[
-            {"type": "text", "text": prompt},
-            {
-                "type": "image",
-                "data": encoded_image,
-                "mime_type": image_data["mime_type"],
-            },
-        ],
-        response_format={
-            "type": "image",
-            "mime_type": "image/jpeg",
-        },
-    )
-
-    output_image = getattr(interaction, "output_image", None)
-    if output_image is None or not getattr(output_image, "data", None):
-        raise Exception("Gemini image model ne edited image return nahi ki.")
-
-    output_data = output_image.data
-    if isinstance(output_data, bytes):
-        output_data = base64.b64encode(output_data).decode("utf-8")
-
-    return {
-        "data": output_data,
-        "mime_type": getattr(output_image, "mime_type", None) or "image/png",
-    }
-
-
-# ==========================================
-# FILE / DOCUMENT EXTRACTION
-# ==========================================
-
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024
-MAX_DOCUMENT_CHARS = 60000
-
-SUPPORTED_DOCUMENT_EXTENSIONS = {
-    ".txt",
-    ".md",
-    ".csv",
-    ".pdf",
-    ".docx",
-    ".xlsx",
-}
-
-
-def _truncate_document_text(text):
-
-    text = str(text or "").strip()
-
-    if len(text) <= MAX_DOCUMENT_CHARS:
-        return text
-
-    return (
-        text[:MAX_DOCUMENT_CHARS]
-        + "\n\n[Document text truncated for processing.]"
-    )
-
-
-def extract_uploaded_document(file_name, mime_type, file_bytes):
-    """Extract useful text from supported document formats."""
-
-    file_name = str(file_name or "file").strip()
-    mime_type = str(mime_type or "").strip().lower()
-    extension = os.path.splitext(file_name)[1].lower()
-
-    if not file_bytes:
-        raise ValueError("Uploaded file is empty.")
-
-    if len(file_bytes) > MAX_UPLOAD_BYTES:
-        raise ValueError("File must be smaller than 10 MB.")
-
-    # Plain text / Markdown / CSV
-    if (
-        extension in {".txt", ".md", ".csv"}
-        or mime_type.startswith("text/")
-    ):
-        try:
-            text = file_bytes.decode("utf-8-sig")
-        except UnicodeDecodeError:
-            text = file_bytes.decode("utf-8", errors="replace")
-
-        if extension == ".csv" or "csv" in mime_type:
-            try:
-                rows = list(csv.reader(StringIO(text)))
-                lines = ["\t".join(row) for row in rows]
-                text = "\n".join(lines)
-            except Exception:
-                pass
-
-        return _truncate_document_text(text)
-
-    # PDF
-    if extension == ".pdf" or mime_type == "application/pdf":
-        if PdfReader is None:
-            raise RuntimeError(
-                "PDF support is not installed. Run: pip install pypdf"
-            )
-
-        reader = PdfReader(BytesIO(file_bytes))
-        pages = []
-
-        for page_number, page in enumerate(reader.pages, start=1):
-            try:
-                page_text = page.extract_text() or ""
-            except Exception as error:
-                print(
-                    f"PDF PAGE {page_number} EXTRACTION ERROR:",
-                    repr(error)
-                )
-                page_text = ""
-
-            if page_text.strip():
-                pages.append(
-                    f"[Page {page_number}]\n{page_text.strip()}"
-                )
-
-            current = "\n\n".join(pages)
-            if len(current) >= MAX_DOCUMENT_CHARS:
-                break
-
-        return _truncate_document_text(
-            "\n\n".join(pages)
-        )
-
-    # DOCX
-    if (
-        extension == ".docx"
-        or mime_type
-        == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ):
-        if Document is None:
-            raise RuntimeError(
-                "DOCX support is not installed. Run: pip install python-docx"
-            )
-
-        document = Document(BytesIO(file_bytes))
-        parts = []
-
-        for paragraph in document.paragraphs:
-            text = paragraph.text.strip()
-            if text:
-                parts.append(text)
-
-        # Include table contents too.
-        for table in document.tables:
-            for row in table.rows:
-                values = [cell.text.strip() for cell in row.cells]
-                parts.append("\t".join(values))
-
-        return _truncate_document_text(
-            "\n".join(parts)
-        )
-
-    # XLSX
-    if extension == ".xlsx":
-        if load_workbook is None:
-            raise RuntimeError(
-                "XLSX support is not installed. Run: pip install openpyxl"
-            )
-
-        workbook = load_workbook(
-            filename=BytesIO(file_bytes),
-            read_only=True,
-            data_only=True
-        )
-
-        try:
-            parts = []
-
-            for worksheet in workbook.worksheets:
-                parts.append(
-                    f"[Sheet: {worksheet.title}]"
-                )
-
-                for row in worksheet.iter_rows(values_only=True):
-                    values = [
-                        "" if value is None else str(value)
-                        for value in row
-                    ]
-
-                    if any(value.strip() for value in values):
-                        parts.append("\t".join(values))
-
-                    if len("\n".join(parts)) >= MAX_DOCUMENT_CHARS:
-                        break
-
-                if len("\n".join(parts)) >= MAX_DOCUMENT_CHARS:
-                    break
-
-            return _truncate_document_text(
-                "\n".join(parts)
-            )
-
-        finally:
-            workbook.close()
-
-    raise ValueError(
-        "Unsupported file type. Supported files: PDF, TXT, MD, CSV, DOCX, XLSX and images."
     )
 
 
@@ -1671,187 +1412,69 @@ def chat():
                 "Maximum 5000 characters allowed."
             }), 400
 
-        response_style = str(
-            data.get("responseStyle", "balanced")
-        ).strip().lower()
-
-        if response_style not in (
-            "concise",
-            "balanced",
-            "detailed"
-        ):
-            response_style = "balanced"
-
         # ======================================
-        # FILE / IMAGE ATTACHMENT
+        # IMAGE ATTACHMENT
         # ======================================
 
         image_data = None
-        document_text = ""
-        uploaded_file_name = ""
-        uploaded_file_mime = ""
-
         image_payload = data.get("image")
-        file_payload = data.get("file")
 
-        attachment_payload = (
-            image_payload
-            if image_payload
-            else file_payload
-        )
-
-        if attachment_payload:
-
-            if not isinstance(attachment_payload, dict):
-                return jsonify({
-                    "error": "Invalid file attachment"
-                }), 400
-
+        if image_payload:
             import base64
 
-            uploaded_file_name = str(
-                attachment_payload.get(
-                    "name",
-                    "file"
-                )
-            ).strip()
+            if not isinstance(image_payload, dict):
+                return jsonify({"error": "Invalid image attachment"}), 400
 
-            uploaded_file_mime = str(
-                attachment_payload.get(
-                    "mimeType",
-                    ""
-                )
+            mime_type = str(
+                image_payload.get("mimeType", "")
             ).strip().lower()
 
             data_url = str(
-                attachment_payload.get(
-                    "dataUrl",
-                    ""
-                )
+                image_payload.get("dataUrl", "")
             ).strip()
 
-            if (
-                not data_url.startswith("data:")
-                or ";base64," not in data_url
-            ):
+            if not mime_type.startswith("image/"):
                 return jsonify({
-                    "error": "Invalid file data."
+                    "error": "Only image attachments are supported right now."
+                }), 400
+
+            if not data_url.startswith("data:") or ";base64," not in data_url:
+                return jsonify({
+                    "error": "Invalid image data."
                 }), 400
 
             try:
-                encoded = data_url.split(
-                    ";base64,",
-                    1
-                )[1]
-
-                file_bytes = base64.b64decode(
+                encoded = data_url.split(";base64,", 1)[1]
+                image_bytes = base64.b64decode(
                     encoded,
                     validate=True
                 )
-
             except Exception:
                 return jsonify({
-                    "error": "File data could not be read."
+                    "error": "Image data could not be read."
                 }), 400
 
-            if not file_bytes:
+            if not image_bytes:
                 return jsonify({
-                    "error": "Uploaded file is empty."
+                    "error": "Image is empty."
                 }), 400
 
-            if len(file_bytes) > MAX_UPLOAD_BYTES:
+            if len(image_bytes) > 8 * 1024 * 1024:
                 return jsonify({
-                    "error": "File must be smaller than 10 MB."
+                    "error": "Image must be smaller than 8 MB."
                 }), 400
+
+            image_data = {
+                "bytes": image_bytes,
+                "mime_type": mime_type
+            }
 
             print(
-                "FILE ATTACHMENT RECEIVED:",
-                uploaded_file_name,
-                uploaded_file_mime,
-                len(file_bytes),
+                "IMAGE ATTACHMENT RECEIVED:",
+                image_payload.get("name", "image"),
+                mime_type,
+                len(image_bytes),
                 "bytes"
-            )
-
-            if uploaded_file_mime.startswith("image/"):
-
-                if len(file_bytes) > 8 * 1024 * 1024:
-                    return jsonify({
-                        "error": "Image must be smaller than 8 MB."
-                    }), 400
-
-                image_data = {
-                    "bytes": file_bytes,
-                    "mime_type": uploaded_file_mime
-                }
-
-            else:
-
-                try:
-                    document_text = extract_uploaded_document(
-                        uploaded_file_name,
-                        uploaded_file_mime,
-                        file_bytes
-                    )
-                except Exception as error:
-                    print(
-                        "DOCUMENT EXTRACTION ERROR:",
-                        repr(error)
-                    )
-                    return jsonify({
-                        "error": str(error)
-                    }), 400
-
-                if not document_text.strip():
-                    return jsonify({
-                        "error": "Document mein readable text nahi mila."
-                    }), 400
-
-        # ======================================
-        # IMAGE EDITING
-        # ======================================
-
-        if image_data and is_image_edit_request(message):
-            edited_image = generate_edited_image(
-                image_data,
-                message
-            )
-
-            def image_edit_stream():
-                yield (
-                    "data: "
-                    + json_module.dumps({
-                        "type": "image",
-                        "mimeType": edited_image["mime_type"],
-                        "data": edited_image["data"],
-                    })
-                    + "\n\n"
-                )
-
-                yield (
-                    "data: "
-                    + json_module.dumps({
-                        "type": "chunk",
-                        "text": "Image edit complete."
-                    })
-                    + "\n\n"
-                )
-
-                yield (
-                    "data: "
-                    + json_module.dumps({
-                        "type": "done"
-                    })
-                    + "\n\n"
-                )
-
-            return Response(
-                stream_with_context(image_edit_stream()),
-                mimetype="text/event-stream",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "X-Accel-Buffering": "no",
-                    "Connection": "keep-alive"
-                }
             )
 
         history_from_frontend = data.get(
@@ -1969,18 +1592,55 @@ def chat():
 
                     break
 
-        # Google Search grounding is handled by Gemini itself.
-        # The old DuckDuckGo scraper is intentionally not called here.
         web_context = ""
 
         if web_search_needed:
+
+            smart_query = build_smart_search_query(
+                message,
+                history_from_frontend
+            )
+
             print(
                 "WEB SEARCH REQUEST DETECTED:",
                 message
             )
+
             print(
-                "GEMINI GOOGLE SEARCH: REQUEST READY"
+                "SMART SEARCH QUERY:",
+                smart_query
             )
+
+            search_results = web_search(
+                smart_query,
+                max_results=5
+            )
+
+            if not search_results and smart_query != message:
+                print(
+                    "SMART SEARCH EMPTY - RETRYING EXACT QUERY"
+                )
+                search_results = web_search(
+                    message,
+                    max_results=5
+                )
+
+            web_context = format_web_results(
+                search_results
+            )
+
+            if web_context:
+
+                print(
+                    "WEB SEARCH RESULTS FOUND:",
+                    len(search_results)
+                )
+
+            else:
+
+                print(
+                    "WEB SEARCH RETURNED NO RESULTS"
+                )
 
         # ======================================
         # WEATHER DETECTION
@@ -2225,9 +1885,6 @@ Rules:
 - Do not unnecessarily restate the user's question.
 - For code requests, prefer complete, directly usable code when appropriate and explain only the important parts.
 
-Response style:
-{("Concise: keep the answer brief and focused. Use only the details needed to answer the request." if response_style == "concise" else "Detailed: give a thorough, well-structured answer with useful explanations, examples, and steps when appropriate." if response_style == "detailed" else "Balanced: give a clear answer with enough explanation to be useful without unnecessary length.")}
-
 User information:
 {memory_text}
 """
@@ -2330,6 +1987,7 @@ If web search results are provided below:
 - Do not invent facts.
 - Do not dump raw search results.
 - Answer naturally and directly.
+- Do not mention that you used DuckDuckGo.
 
 Web Search Results:
 {web_context}
@@ -2343,9 +2001,6 @@ Current User Message:
 
 Image Attachment:
 {("An image is attached. Inspect the image and answer the user's request using it." if image_data else "No image is attached.")}
-
-Document Attachment:
-{(f"A document named {uploaded_file_name} is attached. Use the extracted document text below to answer the user's request.\n\n{document_text}" if document_text else "No document is attached.")}
 """
 
         # ======================================
@@ -2464,47 +2119,58 @@ Document Attachment:
 )
 def history():
 
-    username = session.get(
-        "username"
-    )
+    username = session.get("username")
 
     if not username:
+        return jsonify({"error": "Login required"}), 401
 
-        return jsonify({
-            "error":
-            "Login required"
-        }), 401
+    conn = None
 
     try:
+        conn = get_db_connection()
 
-        return jsonify({
-            "history":
-            load_history(username)
-        })
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id,
+                    title,
+                    messages,
+                    created_at,
+                    COALESCE(pinned, FALSE),
+                    COALESCE(folder, 'General'),
+                    COALESCE(archived, FALSE)
+                FROM chat_history
+                WHERE username = %s
+                ORDER BY created_at DESC, id DESC
+            """, (username,))
+
+            rows = cursor.fetchall()
+
+        history_items = []
+        for row in rows:
+            history_items.append({
+                "id": row[0],
+                "title": row[1],
+                "messages": row[2],
+                "created_at": row[3].isoformat() if row[3] else None,
+                "pinned": bool(row[4]),
+                "folder": row[5] or "General",
+                "archived": bool(row[6])
+            })
+
+        return jsonify({"history": history_items})
 
     except Exception as error:
-
         import traceback
-
-        print(
-            "========== HISTORY ERROR =========="
-        )
-
-        print(
-            "ERROR:",
-            repr(error)
-        )
-
+        print("========== HISTORY ERROR ==========")
+        print("ERROR:", repr(error))
         traceback.print_exc()
+        print("===================================")
+        return jsonify({"error": str(error)}), 500
 
-        print(
-            "==================================="
-        )
-
-        return jsonify({
-            "error":
-            str(error)
-        }), 500
+    finally:
+        if conn:
+            conn.close()
 
 
 # ==========================================
@@ -2680,6 +2346,162 @@ def branch_conversation():
             "details":
             str(error)
         }), 500
+
+
+# ==========================================
+# VISION 4 HISTORY HELPERS
+# ==========================================
+
+def get_history_id_by_index(index, username, cursor):
+
+    if index < 0:
+        return None
+
+    cursor.execute("""
+        SELECT id
+        FROM chat_history
+        WHERE username = %s
+        ORDER BY created_at DESC, id DESC
+        OFFSET %s
+        LIMIT 1
+    """, (username, index))
+
+    row = cursor.fetchone()
+    return row[0] if row else None
+
+
+@app.route(
+    "/history/<int:index>/pin",
+    methods=["POST"]
+)
+def pin_history(index):
+
+    username = session.get("username")
+    if not username:
+        return jsonify({"error": "Login required"}), 401
+
+    conn = None
+    try:
+        data = request.get_json(silent=True) or {}
+        pinned = bool(data.get("pinned", False))
+
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            chat_id = get_history_id_by_index(index, username, cursor)
+            if chat_id is None:
+                return jsonify({"error": "Chat not found"}), 404
+
+            cursor.execute("""
+                UPDATE chat_history
+                SET pinned = %s
+                WHERE id = %s AND username = %s
+            """, (pinned, chat_id, username))
+
+        conn.commit()
+        return jsonify({
+            "message": "Chat pinned" if pinned else "Chat unpinned",
+            "pinned": pinned
+        })
+
+    except Exception as error:
+        if conn:
+            conn.rollback()
+        print("Pin history error:", repr(error))
+        return jsonify({"error": "Internal server error", "details": str(error)}), 500
+
+    finally:
+        if conn:
+            conn.close()
+
+
+@app.route(
+    "/history/<int:index>/folder",
+    methods=["POST"]
+)
+def folder_history(index):
+
+    username = session.get("username")
+    if not username:
+        return jsonify({"error": "Login required"}), 401
+
+    conn = None
+    try:
+        data = request.get_json(silent=True) or {}
+        folder = str(data.get("folder", "")).strip()
+
+        if not folder:
+            return jsonify({"error": "Folder name cannot be empty"}), 400
+
+        folder = folder[:50]
+
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            chat_id = get_history_id_by_index(index, username, cursor)
+            if chat_id is None:
+                return jsonify({"error": "Chat not found"}), 404
+
+            cursor.execute("""
+                UPDATE chat_history
+                SET folder = %s
+                WHERE id = %s AND username = %s
+            """, (folder, chat_id, username))
+
+        conn.commit()
+        return jsonify({"message": "Chat moved to folder", "folder": folder})
+
+    except Exception as error:
+        if conn:
+            conn.rollback()
+        print("Folder history error:", repr(error))
+        return jsonify({"error": "Internal server error", "details": str(error)}), 500
+
+    finally:
+        if conn:
+            conn.close()
+
+
+@app.route(
+    "/history/<int:index>/archive",
+    methods=["POST"]
+)
+def archive_history(index):
+
+    username = session.get("username")
+    if not username:
+        return jsonify({"error": "Login required"}), 401
+
+    conn = None
+    try:
+        data = request.get_json(silent=True) or {}
+        archived = bool(data.get("archived", False))
+
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            chat_id = get_history_id_by_index(index, username, cursor)
+            if chat_id is None:
+                return jsonify({"error": "Chat not found"}), 404
+
+            cursor.execute("""
+                UPDATE chat_history
+                SET archived = %s
+                WHERE id = %s AND username = %s
+            """, (archived, chat_id, username))
+
+        conn.commit()
+        return jsonify({
+            "message": "Chat archived" if archived else "Chat restored",
+            "archived": archived
+        })
+
+    except Exception as error:
+        if conn:
+            conn.rollback()
+        print("Archive history error:", repr(error))
+        return jsonify({"error": "Internal server error", "details": str(error)}), 500
+
+    finally:
+        if conn:
+            conn.close()
 
 
 # ==========================================

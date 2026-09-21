@@ -4549,21 +4549,6 @@
                             return b._historyIndex -
                                 a._historyIndex;
                         });
-        sort(function (a, b) {
-
-            if (
-                Boolean(a.pinned) !==
-                Boolean(b.pinned)
-            ) {
-
-                return a.pinned
-                    ? -1
-                    : 1;
-            }
-
-            return b._historyIndex -
-                a._historyIndex;
-        });
 
 
 const folders = {};
