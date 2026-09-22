@@ -169,40 +169,6 @@ def init_db():
                 )
             """)
 
-            # Vision 4 chat organization fields.
-            cursor.execute("""
-                ALTER TABLE chat_history
-                ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE
-            """)
-
-            cursor.execute("""
-                ALTER TABLE chat_history
-                ADD COLUMN IF NOT EXISTS folder TEXT DEFAULT 'General'
-            """)
-
-            cursor.execute("""
-                ALTER TABLE chat_history
-                ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE
-            """)
-
-            cursor.execute("""
-                UPDATE chat_history
-                SET pinned = FALSE
-                WHERE pinned IS NULL
-            """)
-
-            cursor.execute("""
-                UPDATE chat_history
-                SET folder = 'General'
-                WHERE folder IS NULL OR TRIM(folder) = ''
-            """)
-
-            cursor.execute("""
-                UPDATE chat_history
-                SET archived = FALSE
-                WHERE archived IS NULL
-            """)
-
         conn.commit()
 
     finally:
@@ -1269,95 +1235,84 @@ def generate_ai_reply(
 
     for current_model in models_to_try:
 
-        for attempt in range(2):
+        try:
 
-            try:
+            print(
+                f"Trying Gemini model: {current_model}"
+            )
 
-                print(
-                    f"Trying Gemini model: "
-                    f"{current_model} "
-                    f"(attempt {attempt + 1})"
+            if image_data:
+                image_part = types.Part.from_bytes(
+                    data=image_data["bytes"],
+                    mime_type=image_data["mime_type"]
                 )
 
-                if image_data:
-                    image_part = types.Part.from_bytes(
-                        data=image_data["bytes"],
-                        mime_type=image_data["mime_type"]
-                    )
+                contents = [
+                    prompt,
+                    image_part
+                ]
 
-                    # Gemini multimodal input: send the real image bytes
-                    # together with the text prompt as one user request.
-                    # This is the SDK-supported image-input format.
-                    contents = [
-                        prompt,
-                        image_part
-                    ]
+                print(
+                    "GEMINI IMAGE INPUT: READY",
+                    image_data["mime_type"],
+                    len(image_data["bytes"]),
+                    "bytes"
+                )
+            else:
+                contents = prompt
 
+            response = client.models.generate_content(
+                model=current_model,
+                contents=contents
+            )
+
+            if response and response.text:
+
+                if use_web_search:
                     print(
-                        "GEMINI IMAGE INPUT: READY",
-                        image_data["mime_type"],
-                        len(image_data["bytes"]),
-                        "bytes"
+                        "WEB RESULTS SENT "
+                        "TO GEMINI: SUCCESS"
                     )
-                else:
-                    contents = prompt
 
-                response = client.models.generate_content(
-                    model=current_model,
-                    contents=contents
-                )
+                return response.text.strip()
 
-                if response and response.text:
+            raise Exception(
+                "Gemini ne empty response diya."
+            )
 
-                    if use_web_search:
+        except Exception as error:
 
-                        print(
-                            "WEB RESULTS SENT "
-                            "TO GEMINI: SUCCESS"
-                        )
+            last_error = error
+            error_text = str(error)
 
-                    return response.text.strip()
+            print(
+                f"Gemini error on {current_model}: "
+                f"{error_text}"
+            )
 
-                raise Exception(
-                    "Gemini ne empty response diya."
-                )
-
-            except Exception as error:
-
-                last_error = error
-
-                error_text = str(error)
-
+            # Do not retry the same overloaded/rate-limited model.
+            # Move immediately to the fallback model.
+            if (
+                "503" in error_text
+                or "UNAVAILABLE" in error_text
+                or "429" in error_text
+                or "RESOURCE_EXHAUSTED" in error_text
+            ):
                 print(
-                    f"Gemini error on "
-                    f"{current_model}: "
-                    f"{error_text}"
+                    f"Switching from {current_model} "
+                    "to the next Gemini model."
                 )
+                continue
 
-                if (
-                    "503" in error_text
-                    or
-                    "UNAVAILABLE" in error_text
-                ):
-
-                    time.sleep(2)
-
-                    continue
-
-                break
+            # Other model errors also get one chance on the fallback.
+            continue
 
     if last_error:
-
         raise last_error
 
     raise Exception(
         "Gemini ne response nahi diya."
     )
-
-
-# ==========================================
-# CHAT
-# ==========================================
 
 @app.route(
     "/chat",
@@ -2119,58 +2074,47 @@ Image Attachment:
 )
 def history():
 
-    username = session.get("username")
+    username = session.get(
+        "username"
+    )
 
     if not username:
-        return jsonify({"error": "Login required"}), 401
 
-    conn = None
+        return jsonify({
+            "error":
+            "Login required"
+        }), 401
 
     try:
-        conn = get_db_connection()
 
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT
-                    id,
-                    title,
-                    messages,
-                    created_at,
-                    COALESCE(pinned, FALSE),
-                    COALESCE(folder, 'General'),
-                    COALESCE(archived, FALSE)
-                FROM chat_history
-                WHERE username = %s
-                ORDER BY created_at DESC, id DESC
-            """, (username,))
-
-            rows = cursor.fetchall()
-
-        history_items = []
-        for row in rows:
-            history_items.append({
-                "id": row[0],
-                "title": row[1],
-                "messages": row[2],
-                "created_at": row[3].isoformat() if row[3] else None,
-                "pinned": bool(row[4]),
-                "folder": row[5] or "General",
-                "archived": bool(row[6])
-            })
-
-        return jsonify({"history": history_items})
+        return jsonify({
+            "history":
+            load_history(username)
+        })
 
     except Exception as error:
-        import traceback
-        print("========== HISTORY ERROR ==========")
-        print("ERROR:", repr(error))
-        traceback.print_exc()
-        print("===================================")
-        return jsonify({"error": str(error)}), 500
 
-    finally:
-        if conn:
-            conn.close()
+        import traceback
+
+        print(
+            "========== HISTORY ERROR =========="
+        )
+
+        print(
+            "ERROR:",
+            repr(error)
+        )
+
+        traceback.print_exc()
+
+        print(
+            "==================================="
+        )
+
+        return jsonify({
+            "error":
+            str(error)
+        }), 500
 
 
 # ==========================================
@@ -2346,162 +2290,6 @@ def branch_conversation():
             "details":
             str(error)
         }), 500
-
-
-# ==========================================
-# VISION 4 HISTORY HELPERS
-# ==========================================
-
-def get_history_id_by_index(index, username, cursor):
-
-    if index < 0:
-        return None
-
-    cursor.execute("""
-        SELECT id
-        FROM chat_history
-        WHERE username = %s
-        ORDER BY created_at DESC, id DESC
-        OFFSET %s
-        LIMIT 1
-    """, (username, index))
-
-    row = cursor.fetchone()
-    return row[0] if row else None
-
-
-@app.route(
-    "/history/<int:index>/pin",
-    methods=["POST"]
-)
-def pin_history(index):
-
-    username = session.get("username")
-    if not username:
-        return jsonify({"error": "Login required"}), 401
-
-    conn = None
-    try:
-        data = request.get_json(silent=True) or {}
-        pinned = bool(data.get("pinned", False))
-
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            chat_id = get_history_id_by_index(index, username, cursor)
-            if chat_id is None:
-                return jsonify({"error": "Chat not found"}), 404
-
-            cursor.execute("""
-                UPDATE chat_history
-                SET pinned = %s
-                WHERE id = %s AND username = %s
-            """, (pinned, chat_id, username))
-
-        conn.commit()
-        return jsonify({
-            "message": "Chat pinned" if pinned else "Chat unpinned",
-            "pinned": pinned
-        })
-
-    except Exception as error:
-        if conn:
-            conn.rollback()
-        print("Pin history error:", repr(error))
-        return jsonify({"error": "Internal server error", "details": str(error)}), 500
-
-    finally:
-        if conn:
-            conn.close()
-
-
-@app.route(
-    "/history/<int:index>/folder",
-    methods=["POST"]
-)
-def folder_history(index):
-
-    username = session.get("username")
-    if not username:
-        return jsonify({"error": "Login required"}), 401
-
-    conn = None
-    try:
-        data = request.get_json(silent=True) or {}
-        folder = str(data.get("folder", "")).strip()
-
-        if not folder:
-            return jsonify({"error": "Folder name cannot be empty"}), 400
-
-        folder = folder[:50]
-
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            chat_id = get_history_id_by_index(index, username, cursor)
-            if chat_id is None:
-                return jsonify({"error": "Chat not found"}), 404
-
-            cursor.execute("""
-                UPDATE chat_history
-                SET folder = %s
-                WHERE id = %s AND username = %s
-            """, (folder, chat_id, username))
-
-        conn.commit()
-        return jsonify({"message": "Chat moved to folder", "folder": folder})
-
-    except Exception as error:
-        if conn:
-            conn.rollback()
-        print("Folder history error:", repr(error))
-        return jsonify({"error": "Internal server error", "details": str(error)}), 500
-
-    finally:
-        if conn:
-            conn.close()
-
-
-@app.route(
-    "/history/<int:index>/archive",
-    methods=["POST"]
-)
-def archive_history(index):
-
-    username = session.get("username")
-    if not username:
-        return jsonify({"error": "Login required"}), 401
-
-    conn = None
-    try:
-        data = request.get_json(silent=True) or {}
-        archived = bool(data.get("archived", False))
-
-        conn = get_db_connection()
-        with conn.cursor() as cursor:
-            chat_id = get_history_id_by_index(index, username, cursor)
-            if chat_id is None:
-                return jsonify({"error": "Chat not found"}), 404
-
-            cursor.execute("""
-                UPDATE chat_history
-                SET archived = %s
-                WHERE id = %s AND username = %s
-            """, (archived, chat_id, username))
-
-        conn.commit()
-        return jsonify({
-            "message": "Chat archived" if archived else "Chat restored",
-            "archived": archived
-        })
-
-    except Exception as error:
-        if conn:
-            conn.rollback()
-        print("Archive history error:", repr(error))
-        return jsonify({"error": "Internal server error", "details": str(error)}), 500
-
-    finally:
-        if conn:
-            conn.close()
 
 
 # ==========================================
