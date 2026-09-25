@@ -169,6 +169,40 @@ def init_db():
                 )
             """)
 
+            # Vision 4 chat organization fields.
+            cursor.execute("""
+                ALTER TABLE chat_history
+                ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE
+            """)
+
+            cursor.execute("""
+                ALTER TABLE chat_history
+                ADD COLUMN IF NOT EXISTS folder TEXT DEFAULT 'General'
+            """)
+
+            cursor.execute("""
+                ALTER TABLE chat_history
+                ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE
+            """)
+
+            cursor.execute("""
+                UPDATE chat_history
+                SET pinned = FALSE
+                WHERE pinned IS NULL
+            """)
+
+            cursor.execute("""
+                UPDATE chat_history
+                SET folder = 'General'
+                WHERE folder IS NULL OR TRIM(folder) = ''
+            """)
+
+            cursor.execute("""
+                UPDATE chat_history
+                SET archived = FALSE
+                WHERE archived IS NULL
+            """)
+
         conn.commit()
 
     finally:
@@ -2058,9 +2092,7 @@ Image Attachment:
 
         return jsonify({
             "error":
-            "Internal server error",
-            "details":
-            str(chat_error)
+            "Something went wrong. Please try again."
         }), 500
 
 
@@ -2085,11 +2117,56 @@ def history():
             "Login required"
         }), 401
 
+    conn = None
+
     try:
+        conn = get_db_connection()
+
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    id,
+                    title,
+                    messages,
+                    created_at,
+                    COALESCE(pinned, FALSE),
+                    COALESCE(folder, 'General'),
+                    COALESCE(archived, FALSE)
+                FROM chat_history
+                WHERE username = %s
+                ORDER BY created_at ASC, id ASC
+            """, (username,))
+
+            rows = cursor.fetchall()
+
+        result = []
+
+        for row in rows:
+            (
+                chat_id,
+                title,
+                messages,
+                created_at,
+                pinned,
+                folder,
+                archived
+            ) = row
+
+            result.append({
+                "id": chat_id,
+                "title": title,
+                "messages": messages or [],
+                "created_at":
+                    created_at.isoformat()
+                    if created_at
+                    else None,
+                "pinned": bool(pinned),
+                "folder": folder or "General",
+                "archived": bool(archived)
+            })
 
         return jsonify({
-            "history":
-            load_history(username)
+            "history": result
         })
 
     except Exception as error:
@@ -2115,6 +2192,10 @@ def history():
             "error":
             str(error)
         }), 500
+
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 # ==========================================
@@ -2290,6 +2371,122 @@ def branch_conversation():
             "details":
             str(error)
         }), 500
+
+
+# ==========================================
+# VISION 4 CHAT ORGANIZATION
+# ==========================================
+
+def _chat_id_from_history_index(index, username, conn=None):
+
+    own_connection = conn is None
+
+    if own_connection:
+        conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id
+                FROM chat_history
+                WHERE username = %s
+                ORDER BY created_at ASC, id ASC
+                OFFSET %s
+                LIMIT 1
+            """, (username, index))
+
+            row = cursor.fetchone()
+
+            return row[0] if row else None
+
+    finally:
+        if own_connection:
+            conn.close()
+
+
+@app.route(
+    "/history/<int:index>/pin",
+    methods=["POST"]
+)
+def pin_history(index):
+
+    username = session.get("username")
+
+    if not username:
+        return jsonify({
+            "error": "Login required"
+        }), 401
+
+    conn = None
+
+    try:
+        data = request.get_json(
+            silent=True
+        ) or {}
+
+        pinned = bool(
+            data.get(
+                "pinned",
+                False
+            )
+        )
+
+        conn = get_db_connection()
+
+        chat_id = _chat_id_from_history_index(
+            index,
+            username,
+            conn
+        )
+
+        if chat_id is None:
+            return jsonify({
+                "error":
+                "Chat not found"
+            }), 404
+
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE chat_history
+                SET pinned = %s
+                WHERE id = %s
+                  AND username = %s
+            """, (
+                pinned,
+                chat_id,
+                username
+            ))
+
+        conn.commit()
+
+        return jsonify({
+            "message":
+                "Chat pinned"
+                if pinned
+                else "Chat unpinned",
+            "pinned":
+                pinned
+        })
+
+    except Exception as error:
+
+        if conn is not None:
+            conn.rollback()
+
+        print(
+            "Pin history error:",
+            repr(error)
+        )
+
+        return jsonify({
+            "error":
+            "Internal server error"
+        }), 500
+
+    finally:
+
+        if conn is not None:
+            conn.close()
 
 
 # ==========================================
