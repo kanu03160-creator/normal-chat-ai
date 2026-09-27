@@ -1,5 +1,9 @@
 import urllib.parse
 import urllib.request
+import base64
+import hashlib
+import hmac
+from datetime import datetime, timedelta
 import psycopg2
 import json
 import re
@@ -169,38 +173,31 @@ def init_db():
                 )
             """)
 
-            # Vision 4 chat organization fields.
+            # Normal Pro subscription fields.
             cursor.execute("""
-                ALTER TABLE chat_history
-                ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS is_pro BOOLEAN DEFAULT FALSE
             """)
 
             cursor.execute("""
-                ALTER TABLE chat_history
-                ADD COLUMN IF NOT EXISTS folder TEXT DEFAULT 'General'
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS pro_until TIMESTAMP
             """)
 
             cursor.execute("""
-                ALTER TABLE chat_history
-                ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS pro_payment_link_id TEXT
             """)
 
             cursor.execute("""
-                UPDATE chat_history
-                SET pinned = FALSE
-                WHERE pinned IS NULL
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS last_razorpay_event_id TEXT
             """)
 
             cursor.execute("""
-                UPDATE chat_history
-                SET folder = 'General'
-                WHERE folder IS NULL OR TRIM(folder) = ''
-            """)
-
-            cursor.execute("""
-                UPDATE chat_history
-                SET archived = FALSE
-                WHERE archived IS NULL
+                UPDATE users
+                SET is_pro = FALSE
+                WHERE is_pro IS NULL
             """)
 
         conn.commit()
@@ -785,19 +782,432 @@ def me():
         "username"
     )
 
-    if username:
+    if not username:
 
         return jsonify({
             "logged_in":
-            True,
-            "username":
-            username
+            False
         })
+
+    is_pro = False
+    pro_until = None
+
+    try:
+
+        conn = get_db_connection()
+
+        try:
+
+            with conn.cursor() as cursor:
+
+                cursor.execute(
+                    """
+                    SELECT is_pro, pro_until
+                    FROM users
+                    WHERE username = %s
+                    """,
+                    (username,)
+                )
+
+                user = cursor.fetchone()
+
+        finally:
+
+            conn.close()
+
+        if user:
+
+            is_pro = bool(user[0])
+
+            if user[1]:
+                pro_until = user[1].isoformat()
+
+            # Automatically expire Pro after the subscription date.
+            if is_pro and user[1] and user[1] <= datetime.now():
+                is_pro = False
+
+                conn = get_db_connection()
+                try:
+                    with conn.cursor() as cursor:
+                        cursor.execute(
+                            """
+                            UPDATE users
+                            SET is_pro = FALSE
+                            WHERE username = %s
+                            """,
+                            (username,)
+                        )
+                    conn.commit()
+                finally:
+                    conn.close()
+
+    except Exception as error:
+
+        print(
+            "PRO STATUS ERROR:",
+            repr(error)
+        )
 
     return jsonify({
         "logged_in":
-        False
+        True,
+        "username":
+        username,
+        "is_pro":
+        is_pro,
+        "pro_until":
+        pro_until
     })
+
+
+# ==========================================
+# RAZORPAY NORMAL PRO
+# ==========================================
+
+PRO_AMOUNT_PAISE = 29900
+PRO_DAYS = 30
+RAZORPAY_API_URL = "https://api.razorpay.com/v1/payment_links"
+
+
+def razorpay_auth_header():
+
+    key_id = os.environ.get("RAZORPAY_KEY_ID")
+    key_secret = os.environ.get("RAZORPAY_KEY_SECRET")
+
+    if not key_id or not key_secret:
+        raise RuntimeError(
+            "RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is not set"
+        )
+
+    credentials = f"{key_id}:{key_secret}".encode("utf-8")
+    encoded = base64.b64encode(credentials).decode("ascii")
+
+    return f"Basic {encoded}"
+
+
+def create_razorpay_payment_link(username):
+
+    payload = {
+        "amount": PRO_AMOUNT_PAISE,
+        "currency": "INR",
+        "accept_partial": False,
+        "description": "Normal Chat Pro - 30 days",
+        "reference_id": f"normalchat-{username}-{int(datetime.now().timestamp())}",
+        "customer": {
+            "name": username
+        },
+        "notify": {
+            "sms": False,
+            "email": False
+        },
+        "reminder_enable": True,
+        "notes": {
+            "normal_chat_username": username,
+            "plan": "normal_pro",
+            "duration_days": str(PRO_DAYS)
+        }
+    }
+
+    body = json.dumps(payload).encode("utf-8")
+
+    request_obj = urllib.request.Request(
+        RAZORPAY_API_URL,
+        data=body,
+        method="POST",
+        headers={
+            "Authorization": razorpay_auth_header(),
+            "Content-Type": "application/json"
+        }
+    )
+
+    with urllib.request.urlopen(
+        request_obj,
+        timeout=20
+    ) as response:
+
+        return json.loads(
+            response.read().decode("utf-8")
+        )
+
+
+@app.route(
+    "/create-pro-payment",
+    methods=["POST"]
+)
+def create_pro_payment():
+
+    username = session.get("username")
+
+    if not username:
+        return jsonify({
+            "error": "Login required"
+        }), 401
+
+    try:
+
+        conn = get_db_connection()
+
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT is_pro, pro_until, pro_payment_link_id
+                    FROM users
+                    WHERE username = %s
+                    """,
+                    (username,)
+                )
+                user = cursor.fetchone()
+        finally:
+            conn.close()
+
+        if user:
+            is_pro, pro_until, existing_link_id = user
+
+            if is_pro and pro_until and pro_until > datetime.now():
+                return jsonify({
+                    "message": "Normal Pro is already active",
+                    "is_pro": True,
+                    "pro_until": pro_until.isoformat()
+                }), 200
+
+        payment_link = create_razorpay_payment_link(username)
+
+        payment_link_id = payment_link.get("id")
+        short_url = payment_link.get("short_url")
+
+        if not payment_link_id or not short_url:
+            raise RuntimeError(
+                "Razorpay did not return a valid payment link"
+            )
+
+        conn = get_db_connection()
+
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    UPDATE users
+                    SET pro_payment_link_id = %s
+                    WHERE username = %s
+                    """,
+                    (payment_link_id, username)
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+        return jsonify({
+            "message": "Payment link created",
+            "payment_link_id": payment_link_id,
+            "payment_url": short_url,
+            "amount": 299,
+            "currency": "INR",
+            "plan": "Normal Pro",
+            "duration_days": PRO_DAYS
+        }), 200
+
+    except Exception as error:
+
+        print(
+            "RAZORPAY CREATE PAYMENT ERROR:",
+            repr(error)
+        )
+
+        return jsonify({
+            "error":
+            "Payment link create nahi ho paya. Please try again."
+        }), 500
+
+
+@app.route(
+    "/razorpay/webhook",
+    methods=["POST"]
+)
+def razorpay_webhook():
+
+    webhook_secret = os.environ.get(
+        "RAZORPAY_WEBHOOK_SECRET"
+    )
+
+    if not webhook_secret:
+        print("RAZORPAY_WEBHOOK_SECRET is not set")
+        return jsonify({"error": "Webhook not configured"}), 500
+
+    raw_body = request.get_data()
+    received_signature = request.headers.get(
+        "X-Razorpay-Signature",
+        ""
+    )
+
+    expected_signature = hmac.new(
+        webhook_secret.encode("utf-8"),
+        raw_body,
+        hashlib.sha256
+    ).hexdigest()
+
+    if not received_signature or not hmac.compare_digest(
+        expected_signature,
+        received_signature
+    ):
+        return jsonify({"error": "Invalid signature"}), 400
+
+    try:
+
+        event_id = request.headers.get(
+            "x-razorpay-event-id",
+            ""
+        ).strip()
+
+        payload = json.loads(
+            raw_body.decode("utf-8")
+        )
+
+        event_name = payload.get(
+            "event",
+            ""
+        )
+
+        if event_name != "payment_link.paid":
+            return jsonify({
+                "status": "ignored",
+                "event": event_name
+            }), 200
+
+        payment_link_entity = (
+            payload.get("payload", {})
+            .get("payment_link", {})
+            .get("entity", {})
+        )
+
+        payment_link_id = payment_link_entity.get(
+            "id"
+        )
+
+        notes = payment_link_entity.get(
+            "notes",
+            {}
+        ) or {}
+
+        username = notes.get(
+            "normal_chat_username"
+        )
+
+        if not username and payment_link_id:
+            conn = get_db_connection()
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT username
+                        FROM users
+                        WHERE pro_payment_link_id = %s
+                        """,
+                        (payment_link_id,)
+                    )
+                    row = cursor.fetchone()
+                    if row:
+                        username = row[0]
+            finally:
+                conn.close()
+
+        if not username or not payment_link_id:
+            print(
+                "RAZORPAY WEBHOOK: user/payment link not found"
+            )
+            return jsonify({"error": "User mapping not found"}), 400
+
+        conn = get_db_connection()
+
+        try:
+            with conn.cursor() as cursor:
+
+                # Prevent the same webhook delivery from extending Pro twice.
+                if event_id:
+                    cursor.execute(
+                        """
+                        SELECT last_razorpay_event_id
+                        FROM users
+                        WHERE username = %s
+                        """,
+                        (username,)
+                    )
+                    existing = cursor.fetchone()
+
+                    if existing and existing[0] == event_id:
+                        conn.rollback()
+                        return jsonify({
+                            "status": "already_processed"
+                        }), 200
+
+                cursor.execute(
+                    """
+                    SELECT pro_until
+                    FROM users
+                    WHERE username = %s
+                    FOR UPDATE
+                    """,
+                    (username,)
+                )
+
+                user = cursor.fetchone()
+
+                if not user:
+                    conn.rollback()
+                    return jsonify({
+                        "error": "User not found"
+                    }), 404
+
+                current_until = user[0]
+                now = datetime.now()
+
+                if current_until and current_until > now:
+                    new_until = current_until + timedelta(days=PRO_DAYS)
+                else:
+                    new_until = now + timedelta(days=PRO_DAYS)
+
+                cursor.execute(
+                    """
+                    UPDATE users
+                    SET is_pro = TRUE,
+                        pro_until = %s,
+                        pro_payment_link_id = %s,
+                        last_razorpay_event_id = %s
+                    WHERE username = %s
+                    """,
+                    (
+                        new_until,
+                        payment_link_id,
+                        event_id or None,
+                        username
+                    )
+                )
+
+            conn.commit()
+
+        finally:
+            conn.close()
+
+        print(
+            f"NORMAL PRO ACTIVATED: {username} until {new_until}"
+        )
+
+        return jsonify({
+            "status": "pro_activated",
+            "username": username,
+            "pro_until": new_until.isoformat()
+        }), 200
+
+    except Exception as error:
+
+        print(
+            "RAZORPAY WEBHOOK ERROR:",
+            repr(error)
+        )
+
+        return jsonify({
+            "error": "Webhook processing failed"
+        }), 500
 
 
 # ==========================================
@@ -2092,7 +2502,9 @@ Image Attachment:
 
         return jsonify({
             "error":
-            "Something went wrong. Please try again."
+            "Internal server error",
+            "details":
+            str(chat_error)
         }), 500
 
 
@@ -2117,56 +2529,11 @@ def history():
             "Login required"
         }), 401
 
-    conn = None
-
     try:
-        conn = get_db_connection()
-
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT
-                    id,
-                    title,
-                    messages,
-                    created_at,
-                    COALESCE(pinned, FALSE),
-                    COALESCE(folder, 'General'),
-                    COALESCE(archived, FALSE)
-                FROM chat_history
-                WHERE username = %s
-                ORDER BY created_at ASC, id ASC
-            """, (username,))
-
-            rows = cursor.fetchall()
-
-        result = []
-
-        for row in rows:
-            (
-                chat_id,
-                title,
-                messages,
-                created_at,
-                pinned,
-                folder,
-                archived
-            ) = row
-
-            result.append({
-                "id": chat_id,
-                "title": title,
-                "messages": messages or [],
-                "created_at":
-                    created_at.isoformat()
-                    if created_at
-                    else None,
-                "pinned": bool(pinned),
-                "folder": folder or "General",
-                "archived": bool(archived)
-            })
 
         return jsonify({
-            "history": result
+            "history":
+            load_history(username)
         })
 
     except Exception as error:
@@ -2192,10 +2559,6 @@ def history():
             "error":
             str(error)
         }), 500
-
-    finally:
-        if conn is not None:
-            conn.close()
 
 
 # ==========================================
@@ -2371,122 +2734,6 @@ def branch_conversation():
             "details":
             str(error)
         }), 500
-
-
-# ==========================================
-# VISION 4 CHAT ORGANIZATION
-# ==========================================
-
-def _chat_id_from_history_index(index, username, conn=None):
-
-    own_connection = conn is None
-
-    if own_connection:
-        conn = get_db_connection()
-
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT id
-                FROM chat_history
-                WHERE username = %s
-                ORDER BY created_at ASC, id ASC
-                OFFSET %s
-                LIMIT 1
-            """, (username, index))
-
-            row = cursor.fetchone()
-
-            return row[0] if row else None
-
-    finally:
-        if own_connection:
-            conn.close()
-
-
-@app.route(
-    "/history/<int:index>/pin",
-    methods=["POST"]
-)
-def pin_history(index):
-
-    username = session.get("username")
-
-    if not username:
-        return jsonify({
-            "error": "Login required"
-        }), 401
-
-    conn = None
-
-    try:
-        data = request.get_json(
-            silent=True
-        ) or {}
-
-        pinned = bool(
-            data.get(
-                "pinned",
-                False
-            )
-        )
-
-        conn = get_db_connection()
-
-        chat_id = _chat_id_from_history_index(
-            index,
-            username,
-            conn
-        )
-
-        if chat_id is None:
-            return jsonify({
-                "error":
-                "Chat not found"
-            }), 404
-
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                UPDATE chat_history
-                SET pinned = %s
-                WHERE id = %s
-                  AND username = %s
-            """, (
-                pinned,
-                chat_id,
-                username
-            ))
-
-        conn.commit()
-
-        return jsonify({
-            "message":
-                "Chat pinned"
-                if pinned
-                else "Chat unpinned",
-            "pinned":
-                pinned
-        })
-
-    except Exception as error:
-
-        if conn is not None:
-            conn.rollback()
-
-        print(
-            "Pin history error:",
-            repr(error)
-        )
-
-        return jsonify({
-            "error":
-            "Internal server error"
-        }), 500
-
-    finally:
-
-        if conn is not None:
-            conn.close()
 
 
 # ==========================================

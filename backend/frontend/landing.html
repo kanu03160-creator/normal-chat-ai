@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Normal Chat — Your AI. Your Conversations.</title>
+  <meta name="description" content="Normal Chat is a modern, context-aware AI workspace designed to make AI conversations simple, useful, and personal. Chat, create, search, and explore with ease.">
+  <meta name="theme-color" content="#07080B">
+  
+  <!-- Open Graph / Social Meta -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Normal Chat — Your AI. Your Conversations.">
+  <meta property="og:description" content="Chat, create, search, and explore with an AI assistant designed around your conversations.">
+  <meta property="og:url" content="https://normalchat.ai">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Normal Chat — Your AI. Your Conversations.">
+  <meta name="twitter:description" content="Chat, create, search, and explore with an AI assistant designed around your conversations.">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Favicon SVG -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230B0F19'/><path d='M9 11C9 9.89543 9.89543 9 11 9H21C22.1046 9 23 9.89543 23 11V18C23 19.1046 22.1046 20 21 20H15L11 23V20H11C9.89543 20 9 19.1046 9 18V11Z' stroke='%233B82F6' stroke-width='2' fill='%233B82F6' fill-opacity='0.2'/><circle cx='13' cy='14.5' r='1.2' fill='%23FFFFFF'/><circle cx='16' cy='14.5' r='1.2' fill='%23FFFFFF'/><circle cx='19' cy='14.5' r='1.2' fill='%23FFFFFF'/></svg>">
+</head>
+<body>
+  <!-- Subtle Ambient Backdrop Layers -->
+  <div class="bg-ambient-layer" aria-hidden="true"></div>
+  <div class="ambient-grid-overlay" aria-hidden="true"></div>
+
+  <div class="site-wrapper">
+    <!-- ==================== HEADER & NAVBAR ==================== -->
+    <header class="navbar" id="navbar">
+      <div class="container nav-container">
+        <!-- Brand Logo -->
+        <a href="#" class="nav-brand" aria-label="Normal Chat Home">
+          <div class="brand-icon-wrapper">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M4 6C4 4.89543 4.89543 4 6 4H18C19.1046 4 20 4.89543 20 6V15C20 16.1046 19.1046 17 18 17H12L7 21V17H6C4.89543 17 4 16.1046 4 15V6Z" stroke="#60A5FA" stroke-width="1.8" stroke-linejoin="round"/>
+              <circle cx="8.5" cy="10.5" r="1.2" fill="#F8FAFC"/>
+              <circle cx="12" cy="10.5" r="1.2" fill="#F8FAFC"/>
+              <circle cx="15.5" cy="10.5" r="1.2" fill="#F8FAFC"/>
+            </svg>
+          </div>
+          <span class="brand-name">Normal Chat</span>
+        </a>
+
+        <!-- Center Nav Links -->
+        <nav class="nav-menu" aria-label="Main Navigation">
+          <ul class="nav-links">
+            <li><a href="#features" class="nav-link">Features</a></li>
+            <li><a href="#how-it-works" class="nav-link">How it Works</a></li>
+            <li><a href="#pricing" class="nav-link">Pricing</a></li>
+            <li><a href="#about" class="nav-link">About</a></li>
+            <li><a href="#faq" class="nav-link">FAQ</a></li>
+          </ul>
+        </nav>
+
+        <!-- Right Action Buttons -->
+        <div class="nav-actions">
+          <a href="/login" class="btn btn-link">Log in</a>
+          <a href="/chat" class="btn btn-primary">
+            <span>Try Normal Chat</span>
+            <span class="btn-icon-right" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </span>
+          </a>
+        </div>
+
+        <!-- Mobile Hamburger Button -->
+        <button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-nav-menu">
+          <svg class="hamburger-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile Drawer Menu -->
+    <div class="mobile-nav-menu" id="mobile-nav-menu" aria-hidden="true">
+      <ul class="mobile-nav-links">
+        <li><a href="#features" class="nav-link mobile-link">Features</a></li>
+        <li><a href="#how-it-works" class="nav-link mobile-link">How it Works</a></li>
+        <li><a href="#pricing" class="nav-link mobile-link">Pricing</a></li>
+        <li><a href="#about" class="nav-link mobile-link">About</a></li>
+        <li><a href="#faq" class="nav-link mobile-link">FAQ</a></li>
+      </ul>
+      <div class="mobile-actions">
+        <a href="/login" class="btn btn-secondary" style="width: 100%;">Log in</a>
+        <a href="/chat" class="btn btn-primary" style="width: 100%;">Try Normal Chat</a>
+      </div>
+    </div>
+
+    <main>
+      <!-- ==================== HERO SECTION ==================== -->
+      <section class="section hero-section" id="hero">
+        <div class="container">
+          <div class="hero-content">
+            <div class="hero-pill">
+              <span class="pill-dot"></span>
+              <span>Next-Generation Conversational Intelligence</span>
+            </div>
+            
+            <h1 class="hero-title">Your AI. Your Conversations.</h1>
+            
+            <p class="hero-subtitle">
+              Chat, create, search, and explore with an AI assistant designed around your conversations.
+            </p>
+
+            <div class="hero-cta-group">
+              <a href="/chat" class="btn btn-primary btn-lg">
+                <span>Try Normal Chat</span>
+                <span class="btn-icon-right" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </span>
+              </a>
+              <a href="#features" class="btn btn-secondary btn-lg">
+                <span>Explore Features</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Hero UI Mockup -->
+          <div class="hero-mockup-wrapper">
+            <div class="mockup-glow-effect" aria-hidden="true"></div>
+            
+            <div class="chat-mockup-window">
+              <!-- Window Chrome Header -->
+              <div class="mockup-header">
+                <div class="window-dots" aria-hidden="true">
+                  <span class="window-dot"></span>
+                  <span class="window-dot"></span>
+                  <span class="window-dot"></span>
+                </div>
+                
+                <div class="window-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  <span>normal-chat-session-01</span>
+                  <span class="window-status-pill">Active Memory</span>
+                </div>
+
+                <div class="window-actions">
+                  <span class="context-tag-chip">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Synced
+                  </span>
+                </div>
+              </div>
+
+              <!-- Chat Message Body -->
+              <div class="mockup-chat-body">
+                <!-- User Prompt Row -->
+                <div class="chat-message-row user-row">
+                  <div class="chat-bubble user-bubble">
+                    Can you analyze our onboarding funnel metrics and propose 3 concrete improvements to streamline user setup?
+                  </div>
+                  <div class="chat-avatar user-avatar" title="You">
+                    <span>JD</span>
+                  </div>
+                </div>
+
+                <!-- AI Response Row -->
+                <div class="chat-message-row">
+                  <div class="chat-avatar ai-avatar" title="Normal Chat AI">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                  </div>
+                  <div class="chat-bubble ai-bubble">
+                    <div class="reasoning-badge">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+                      Context loaded from 4 linked threads &middot; 3 recommendations prepared
+                    </div>
+
+                    <div class="ai-text-block">
+                      <p>Based on your conversation history and recent funnel telemetry, here are three high-impact optimizations:</p>
+                      
+                      <p><strong>1. Instant Environment Provisioning:</strong> Pre-warm user workspace containers during email verification to eliminate the 8.4s initial latency spike.</p>
+                      
+                      <p><strong>2. Progressive Onboarding Profiling:</strong> Replace the 6-step form with contextual defaults, deferring workspace permission configs until first project invite.</p>
+                      
+                      <div class="ai-code-block">
+                        <span class="code-comment"># Optimized funnel telemetry routing</span><br>
+                        <span class="code-keyword">def</span> <span class="code-func">streamline_onboarding</span>(user_id):<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;session = workspace.<span class="code-func">prewarm_session</span>(user_id)<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">return</span> session.<span class="code-func">bootstrap_defaults</span>(interactive=<span class="code-keyword">True</span>)
+                      </div>
+
+                      <p><strong>3. Interactive AI First-Prompt Prompting:</strong> Guide the new user immediately into an active chat thread with pre-filled sample questions tailored to their role.</p>
+                    </div>
+
+                    <!-- Message Bottom Controls -->
+                    <div class="message-controls-toolbar">
+                      <div class="control-buttons-left">
+                        <button class="control-btn" title="Copy response">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                          <span>Copy</span>
+                        </button>
+                        <button class="control-btn" title="Regenerate answer">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                          <span>Regenerate</span>
+                        </button>
+                        <button class="control-btn" title="Good response">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                        </button>
+                      </div>
+                      <div class="context-tag-chip">
+                        <span>Web search: verified</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Input Dock -->
+              <div class="mockup-input-container">
+                <div class="mockup-input-bar">
+                  <button class="input-icon-btn" title="Attach documents or images">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </button>
+                  <span class="input-placeholder-text">Ask a follow-up or explore another topic...</span>
+                  <span class="input-capsule-badge">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                    Web
+                  </span>
+                  <button class="input-send-btn" title="Send message">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TRUST / INTRO SECTION ==================== -->
+      <section class="section trust-section" id="intro">
+        <div class="container">
+          <div class="trust-card">
+            <div class="section-tag">A Modern AI Workspace</div>
+            <p class="trust-statement">
+              Normal Chat is built for professionals and teams who demand <span>depth, memory, and clarity</span> in everyday conversations without friction or distraction.
+            </p>
+
+            <div class="trust-pillars-grid">
+              <div class="trust-pillar-item">
+                <div class="pillar-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div class="pillar-text">
+                  <h4>Reliable Clarity</h4>
+                  <p>Accurate, straightforward responses</p>
+                </div>
+              </div>
+
+              <div class="trust-pillar-item">
+                <div class="pillar-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="pillar-text">
+                  <h4>Real-Time Context</h4>
+                  <p>Up-to-date web information</p>
+                </div>
+              </div>
+
+              <div class="trust-pillar-item">
+                <div class="pillar-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                </div>
+                <div class="pillar-text">
+                  <h4>Organized Memory</h4>
+                  <p>Seamless continuity over time</p>
+                </div>
+              </div>
+
+              <div class="trust-pillar-item">
+                <div class="pillar-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="pillar-text">
+                  <h4>Multimodal Depth</h4>
+                  <p>File & image comprehension</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== FEATURES SECTION ==================== -->
+      <section class="section" id="features">
+        <div class="container">
+          <div class="section-header">
+            <div class="section-tag">Capabilities</div>
+            <h2 class="section-title">Everything you need in one AI workspace</h2>
+            <p class="section-subtitle">
+              Engineered with clean utilities, purposeful interactions, and zero clutter to help you think and work faster.
+            </p>
+          </div>
+
+          <div class="features-grid">
+            <!-- 1. Smart AI Chat -->
+            <div class="feature-card">
+              <div class="feature-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <h3 class="feature-card-title">Smart AI Chat</h3>
+              <p class="feature-card-desc">Get fast, natural and context-aware answers.</p>
+            </div>
+
+            <!-- 2. Conversation Memory -->
+            <div class="feature-card">
+              <div class="feature-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+              </div>
+              <h3 class="feature-card-title">Conversation Memory</h3>
+              <p class="feature-card-desc">Keep important information available across your conversations.</p>
+            </div>
+
+            <!-- 3. Web Search -->
+            <div class="feature-card">
+              <div class="feature-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  <line x1="11" y1="8" x2="11" y2="14"/>
+                  <line x1="8" y1="11" x2="14" y2="11"/>
+                </svg>
+              </div>
+              <h3 class="feature-card-title">Web Search</h3>
+              <p class="feature-card-desc">Find current information when your question needs fresh data.</p>
+            </div>
+
+            <!-- 4. File & Image Understanding -->
+            <div class="feature-card">
+              <div class="feature-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+              </div>
+              <h3 class="feature-card-title">File & Image Understanding</h3>
+              <p class="feature-card-desc">Work with documents, files and images inside your conversations.</p>
+            </div>
+
+            <!-- 5. Conversation History -->
+            <div class="feature-card">
+              <div class="feature-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <h3 class="feature-card-title">Conversation History</h3>
+              <p class="feature-card-desc">Keep your conversations organized and easy to revisit.</p>
+            </div>
+
+            <!-- 6. Regenerate & Continue -->
+            <div class="feature-card">
+              <div class="feature-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"/>
+                  <polyline points="1 20 1 14 7 14"/>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+              </div>
+              <h3 class="feature-card-title">Regenerate & Continue</h3>
+              <p class="feature-card-desc">Refine responses and continue conversations naturally.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== HOW IT WORKS SECTION ==================== -->
+      <section class="section" id="how-it-works">
+        <div class="container">
+          <div class="section-header">
+            <div class="section-tag">Simple Workflow</div>
+            <h2 class="section-title">How it Works</h2>
+            <p class="section-subtitle">
+              Three streamlined steps from initial idea to complete clarity.
+            </p>
+          </div>
+
+          <div class="steps-grid">
+            <!-- Step 01 -->
+            <div class="step-card">
+              <div class="step-number">01</div>
+              <h3 class="step-title">Start a conversation</h3>
+              <p class="step-desc">Ask anything in a clean, focused workspace.</p>
+            </div>
+
+            <!-- Step 02 -->
+            <div class="step-card">
+              <div class="step-number">02</div>
+              <h3 class="step-title">Add context</h3>
+              <p class="step-desc">Use conversations, files, images and web information when needed.</p>
+            </div>
+
+            <!-- Step 03 -->
+            <div class="step-card">
+              <div class="step-number">03</div>
+              <h3 class="step-title">Get things done</h3>
+              <p class="step-desc">Use AI to understand, create, learn and solve.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== PRODUCT SHOWCASE SECTION ==================== -->
+      <section class="section showcase-section" id="showcase">
+        <div class="container showcase-container">
+          <div class="showcase-intro-bar">
+            <div class="showcase-text-col">
+              <div class="section-tag">Product Showcase</div>
+              <h2 class="showcase-headline">Built around the way you actually use AI.</h2>
+              <p class="showcase-subtext">
+                Designed to handle complex multi-turn inquiries, code refactoring, and document audits without feeling overloaded.
+              </p>
+            </div>
+            
+            <div class="showcase-feature-badges">
+              <div class="showcase-badge-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Persistent History
+              </div>
+              <div class="showcase-badge-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+                Multi-Turn Reasoning
+              </div>
+              <div class="showcase-badge-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Instant Latency
+              </div>
+            </div>
+          </div>
+
+          <!-- Full Realistic Workspace Mockup -->
+          <div class="showcase-app-frame">
+            <!-- Sidebar -->
+            <aside class="showcase-sidebar">
+              <div class="sidebar-top">
+                <div class="sidebar-brand-row">
+                  <div class="nav-brand" style="font-size: 0.95rem;">
+                    <div class="brand-icon-wrapper" style="width: 26px; height: 26px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2"><path d="M4 6h16v11H12l-5 4v-4H4z"/></svg>
+                    </div>
+                    <span>Normal Chat</span>
+                  </div>
+                </div>
+
+                <button class="sidebar-new-btn">
+                  <span>+ New Thread</span>
+                  <span class="kb-badge">Ctrl K</span>
+                </button>
+
+                <div>
+                  <div class="sidebar-group-title">Pinned</div>
+                  <ul class="sidebar-thread-list">
+                    <li class="sidebar-thread-item active">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <span>Pipeline Optimization</span>
+                    </li>
+                    <li class="sidebar-thread-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <span>Q3 Architecture Audit</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <div class="sidebar-group-title">Recent</div>
+                  <ul class="sidebar-thread-list">
+                    <li class="sidebar-thread-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <span>Product Positioning Draft</span>
+                    </li>
+                    <li class="sidebar-thread-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <span>Database Query Indexing</span>
+                    </li>
+                    <li class="sidebar-thread-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <span>Design System Token Audit</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="sidebar-footer-profile">
+                <div class="user-avatar-small">JD</div>
+                <div class="user-profile-text">
+                  <div class="user-name-label">Jane Doe</div>
+                  <div class="user-plan-label">Normal Pro Workspace</div>
+                </div>
+              </div>
+            </aside>
+
+            <!-- Main Conversation Area -->
+            <div class="showcase-main-area">
+              <div class="showcase-top-bar">
+                <div class="active-thread-info">
+                  <h3 class="thread-heading-title">Pipeline Optimization</h3>
+                  <span class="model-selector-chip">
+                    <svg width="8" height="8" viewBox="0 0 10 10" fill="#10B981"><circle cx="5" cy="5" r="5"/></svg>
+                    Normal 2.5
+                  </span>
+                </div>
+
+                <div class="showcase-feature-badges">
+                  <button class="control-btn">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    Share
+                  </button>
+                  <button class="control-btn">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Chat Flow -->
+              <div class="showcase-chat-flow">
+                <!-- User Prompt with File -->
+                <div class="chat-message-row user-row">
+                  <div class="chat-bubble user-bubble">
+                    <div class="file-attachment-chip">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <span>telemetry_benchmarks.csv</span>
+                      <span class="file-size-tag">(1.4 MB)</span>
+                    </div>
+                    Can you parse our telemetry benchmarks and summarize the throughput improvements before and after async worker pools?
+                  </div>
+                  <div class="chat-avatar user-avatar">JD</div>
+                </div>
+
+                <!-- AI Response -->
+                <div class="chat-message-row">
+                  <div class="chat-avatar ai-avatar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2"><polygon points="12 2 15 8.5 22 9.5 17 14.5 18.5 21.5 12 18 5.5 21.5 7 14.5 2 9.5 9 8.5 12 2"/></svg>
+                  </div>
+                  <div class="chat-bubble ai-bubble">
+                    <div class="reasoning-badge">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      Parsed 12,400 rows &middot; Calculation completed
+                    </div>
+                    
+                    <p>Here is the performance delta across your workload batches:</p>
+
+                    <!-- Mockup Data Table -->
+                    <div class="mockup-table-wrapper">
+                      <table class="mockup-data-table">
+                        <thead>
+                          <tr>
+                            <th>Pipeline Stage</th>
+                            <th>Sync Baseline</th>
+                            <th>Async Worker Pool</th>
+                            <th>Improvement</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>JSON Ingestion</td>
+                            <td>420 ms</td>
+                            <td>85 ms</td>
+                            <td><span class="table-badge-green">+79.7%</span></td>
+                          </tr>
+                          <tr>
+                            <td>Batch Vectorization</td>
+                            <td>1,840 ms</td>
+                            <td>310 ms</td>
+                            <td><span class="table-badge-green">+83.1%</span></td>
+                          </tr>
+                          <tr>
+                            <td>Storage Indexing</td>
+                            <td>610 ms</td>
+                            <td>140 ms</td>
+                            <td><span class="table-badge-green">+77.0%</span></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <p style="font-size: 0.9rem; color: #94A3B8;">
+                      Async workers eliminated the main thread blocking lock on storage indexing. Would you like me to generate the refactored worker queue snippet?
+                    </p>
+
+                    <!-- Message Bottom Controls -->
+                    <div class="message-controls-toolbar">
+                      <div class="control-buttons-left">
+                        <button class="control-btn">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                          <span>Copy</span>
+                        </button>
+                        <button class="control-btn">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                          <span>Regenerate</span>
+                        </button>
+                      </div>
+                      <span class="context-tag-chip">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        CSV verified
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Input Bar -->
+              <div class="mockup-input-container">
+                <div class="mockup-input-bar">
+                  <button class="input-icon-btn" title="Upload document or image">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </button>
+                  <span class="input-placeholder-text">Ask Normal Chat to generate code or explain metrics...</span>
+                  <button class="input-send-btn" title="Send message">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== BENEFITS SECTION ==================== -->
+      <section class="section benefits-section" id="benefits">
+        <div class="container">
+          <div class="section-header">
+            <div class="section-tag">Why Normal Chat</div>
+            <h2 class="section-title">Designed for how you work</h2>
+            <p class="section-subtitle">
+              Focused on clean execution, continuous context, and day-to-day productivity.
+            </p>
+          </div>
+
+          <div class="benefits-grid">
+            <!-- 1 -->
+            <div class="benefit-card">
+              <div class="benefit-check-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h3 class="benefit-title">Simple to use</h3>
+              <p class="benefit-desc">Intuitive interface with no clutter, no confusing setup, and immediate answers.</p>
+            </div>
+
+            <!-- 2 -->
+            <div class="benefit-card">
+              <div class="benefit-check-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h3 class="benefit-title">Fast responses</h3>
+              <p class="benefit-desc">Low-latency streaming architecture optimized for swift back-and-forth workflows.</p>
+            </div>
+
+            <!-- 3 -->
+            <div class="benefit-card">
+              <div class="benefit-check-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h3 class="benefit-title">Conversation-aware</h3>
+              <p class="benefit-desc">Remembers your thread details so you never have to re-explain prerequisites.</p>
+            </div>
+
+            <!-- 4 -->
+            <div class="benefit-card">
+              <div class="benefit-check-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h3 class="benefit-title">Modern dark interface</h3>
+              <p class="benefit-desc">Engineered for long working sessions with high-contrast, eye-friendly dark surfaces.</p>
+            </div>
+
+            <!-- 5 -->
+            <div class="benefit-card">
+              <div class="benefit-check-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h3 class="benefit-title">Designed for everyday AI use</h3>
+              <p class="benefit-desc">From quick summaries to deep technical tasks, crafted to fit right into your daily routine.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== PRICING SECTION ==================== -->
+      <section class="section pricing-section" id="pricing">
+        <div class="container">
+          <div class="section-header">
+            <div class="section-tag">Transparent Plans</div>
+            <h2 class="section-title">Simple, predictable pricing</h2>
+            <p class="section-subtitle">
+              Start free, explore at your own pace, and upgrade whenever you need deeper memory and accelerated performance.
+            </p>
+
+            <!-- Billing Cycle Toggle -->
+            <div class="pricing-toggle-wrapper">
+              <span class="toggle-label active" id="billing-monthly-label">Monthly</span>
+              <button class="pricing-toggle-switch" id="pricing-toggle" role="switch" aria-checked="false" aria-label="Toggle annual billing">
+                <span class="toggle-slider-circle"></span>
+              </button>
+              <span class="toggle-label" id="billing-annual-label">
+                Annually
+                <span class="annual-discount-pill">Save 20%</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="pricing-grid">
+            <!-- 1. Free Plan -->
+            <div class="pricing-card">
+              <div class="pricing-plan-header">
+                <h3 class="plan-name">Free</h3>
+                <p class="plan-desc">For everyday questions, brainstorming, and personal exploration.</p>
+              </div>
+
+              <div class="pricing-price-box">
+                <div class="price-amount-wrapper">
+                  <span class="price-currency">$</span>
+                  <span class="price-value" data-monthly="0" data-annual="0">0</span>
+                </div>
+                <span class="price-period">Free forever</span>
+              </div>
+
+              <ul class="pricing-features-list">
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Smart AI conversational chat</span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Standard conversation history</span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Real-time web search capabilities</span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Up to 5 file & image uploads / month</span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Standard response latency</span>
+                </li>
+              </ul>
+
+              <div class="pricing-cta-box">
+                <a href="/chat" class="btn btn-secondary" style="width: 100%;">
+                  <span>Get Started Free</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- 2. Pro Plan (Most Popular) -->
+            <div class="pricing-card popular">
+              <div class="popular-badge-pill">Most Popular</div>
+
+              <div class="pricing-plan-header">
+                <h3 class="plan-name">Normal Pro</h3>
+                <p class="plan-desc">For professionals and creators who need deeper memory and faster reasoning.</p>
+              </div>
+
+              <div class="pricing-price-box">
+                <div class="price-amount-wrapper">
+                  <span class="price-currency">$</span>
+                  <span class="price-value" data-monthly="19" data-annual="15">19</span>
+                </div>
+                <span class="price-period" data-monthly-sub="/ month" data-annual-sub="/ month, billed annually">/ month</span>
+              </div>
+
+              <ul class="pricing-features-list">
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span><strong>Everything in Free</strong></span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Long-term persistent conversation memory</span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Unlimited file, PDF, CSV, and image analysis</span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Priority low-latency computing & reasoning</span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Extended web search with live citation links</span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Full conversation export & sharing tools</span>
+                </li>
+              </ul>
+
+              <div class="pricing-cta-box">
+                <a href="/chat" class="btn btn-primary" style="width: 100%;">
+                  <span>Upgrade to Pro</span>
+                  <span class="btn-icon-right" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </span>
+                </a>
+              </div>
+            </div>
+
+            <!-- 3. Team Plan -->
+            <div class="pricing-card">
+              <div class="pricing-plan-header">
+                <h3 class="plan-name">Team</h3>
+                <p class="plan-desc">For startups and engineering teams sharing context and workspaces.</p>
+              </div>
+
+              <div class="pricing-price-box">
+                <div class="price-amount-wrapper">
+                  <span class="price-currency">$</span>
+                  <span class="price-value" data-monthly="49" data-annual="39">49</span>
+                </div>
+                <span class="price-period" data-monthly-sub="/ user / month" data-annual-sub="/ user / mo, billed annually">/ user / month</span>
+              </div>
+
+              <ul class="pricing-features-list">
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span><strong>Everything in Pro</strong></span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Shared team conversation workspaces</span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Centralized team billing & seat management</span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Role-based access controls & workspace logs</span>
+                </li>
+                <li>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Dedicated support channel & priority onboarding</span>
+                </li>
+              </ul>
+
+              <div class="pricing-cta-box">
+                <a href="/chat" class="btn btn-secondary" style="width: 100%;">
+                  <span>Start Team Trial</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== ABOUT SECTION ==================== -->
+      <section class="section" id="about">
+        <div class="container">
+          <div class="about-card">
+            <div class="about-text-col">
+              <div class="section-tag">About Us</div>
+              <h2 class="about-main-title">Built for better conversations</h2>
+              
+              <p class="about-lead-paragraph">
+                Normal Chat is designed to make AI feel simple, useful and personal — giving you one place to ask questions, explore ideas, work with information and continue conversations.
+              </p>
+
+              <ul class="about-bullets-list">
+                <li class="about-bullet-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Thoughtfully constructed around everyday dialogue, not hype.</span>
+                </li>
+                <li class="about-bullet-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Seamless blend of documents, live web data, and persistent memory.</span>
+                </li>
+                <li class="about-bullet-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Zero unnecessary distractions so you stay immersed in your flow.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="about-visual-box">
+              <div class="about-stat-row">
+                <div class="about-stat-card">
+                  <div class="stat-number">100%</div>
+                  <div class="stat-desc">Focused on conversational utility</div>
+                </div>
+                <div class="about-stat-card">
+                  <div class="stat-number">Zero</div>
+                  <div class="stat-desc">Superfluous clutter or bloat</div>
+                </div>
+              </div>
+
+              <div class="about-quote-box">
+                "AI is at its best when it gets out of the way and lets your thoughts and questions take center stage."
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== FAQ SECTION ==================== -->
+      <section class="section" id="faq">
+        <div class="container">
+          <div class="section-header">
+            <div class="section-tag">Got Questions?</div>
+            <h2 class="section-title">Frequently Asked Questions</h2>
+            <p class="section-subtitle">
+              Clear answers about how Normal Chat operates and how to get the most out of your experience.
+            </p>
+          </div>
+
+          <div class="faq-accordion-container" id="faq-accordion">
+            <!-- Question 1 -->
+            <div class="faq-item">
+              <button class="faq-question-btn" aria-expanded="false">
+                <span>What is Normal Chat?</span>
+                <span class="faq-toggle-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </span>
+              </button>
+              <div class="faq-answer-panel" role="region">
+                <div class="faq-answer-content">
+                  Normal Chat is a modern AI workspace designed to make conversational AI simple, personal, and productive. It brings together context-aware chat, memory across discussions, real-time web retrieval, and document comprehension into one refined dark interface.
+                </div>
+              </div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="faq-item">
+              <button class="faq-question-btn" aria-expanded="false">
+                <span>Can I use Normal Chat for everyday questions?</span>
+                <span class="faq-toggle-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </span>
+              </button>
+              <div class="faq-answer-panel" role="region">
+                <div class="faq-answer-content">
+                  Yes, absolutely. Normal Chat is built for everyday tasks — whether you're drafting an email, summarizing meeting notes, debugging a snippet of code, brainstorming creative ideas, or learning about a new subject.
+                </div>
+              </div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="faq-item">
+              <button class="faq-question-btn" aria-expanded="false">
+                <span>Does Normal Chat remember conversations?</span>
+                <span class="faq-toggle-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </span>
+              </button>
+              <div class="faq-answer-panel" role="region">
+                <div class="faq-answer-content">
+                  Yes. Normal Chat includes built-in conversation history and memory features that preserve relevant context within and across your discussion threads, so you don't have to repeat baseline background each time you ask a question.
+                </div>
+              </div>
+            </div>
+
+            <!-- Question 4 -->
+            <div class="faq-item">
+              <button class="faq-question-btn" aria-expanded="false">
+                <span>Can I upload files and images?</span>
+                <span class="faq-toggle-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </span>
+              </button>
+              <div class="faq-answer-panel" role="region">
+                <div class="faq-answer-content">
+                  Yes. You can attach common documents, CSVs, PDFs, and images right inside the chat using the attachment button. Normal Chat parses the content and incorporates it directly into your prompt context.
+                </div>
+              </div>
+            </div>
+
+            <!-- Question 5 -->
+            <div class="faq-item">
+              <button class="faq-question-btn" aria-expanded="false">
+                <span>Can Normal Chat search the web?</span>
+                <span class="faq-toggle-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </span>
+              </button>
+              <div class="faq-answer-panel" role="region">
+                <div class="faq-answer-content">
+                  Yes. When questions require fresh, real-time data or recent events, Normal Chat can query the web and reference accurate, current sources directly inside your response.
+                </div>
+              </div>
+            </div>
+
+            <!-- Question 6 -->
+            <div class="faq-item">
+              <button class="faq-question-btn" aria-expanded="false">
+                <span>How do I get started?</span>
+                <span class="faq-toggle-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </span>
+              </button>
+              <div class="faq-answer-panel" role="region">
+                <div class="faq-answer-content">
+                  Getting started takes just seconds. Simply click the "Try Normal Chat" button to enter the chat workspace, type your first question or idea, and begin experiencing a better conversational flow.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== FINAL CTA SECTION ==================== -->
+      <section class="section cta-section" id="cta">
+        <div class="container">
+          <div class="cta-box">
+            <h2 class="cta-title">Ready to start a better conversation?</h2>
+            <p class="cta-subtitle">Open Normal Chat and start exploring.</p>
+            <a href="/chat" class="btn btn-primary btn-lg">
+              <span>Try Normal Chat</span>
+              <span class="btn-icon-right" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-top">
+          <!-- Brand Info -->
+          <div class="footer-brand-col">
+            <a href="#" class="nav-brand">
+              <div class="brand-icon-wrapper">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="1.8"><path d="M4 6h16v11H12l-5 4v-4H4z"/><circle cx="8.5" cy="10.5" r="1" fill="#F8FAFC"/><circle cx="12" cy="10.5" r="1" fill="#F8FAFC"/><circle cx="15.5" cy="10.5" r="1" fill="#F8FAFC"/></svg>
+              </div>
+              <span class="brand-name">Normal Chat</span>
+            </a>
+            <p class="footer-desc">
+              Your AI. Your Conversations. An intelligent, distraction-free conversational workspace designed for modern productivity.
+            </p>
+          </div>
+
+          <!-- Product Navigation -->
+          <div>
+            <h4 class="footer-nav-title">Product</h4>
+            <ul class="footer-links-list">
+              <li><a href="#features" class="footer-link">Features</a></li>
+              <li><a href="#how-it-works" class="footer-link">How it Works</a></li>
+              <li><a href="#pricing" class="footer-link">Pricing</a></li>
+              <li><a href="#showcase" class="footer-link">Showcase</a></li>
+              <li><a href="#benefits" class="footer-link">Benefits</a></li>
+            </ul>
+          </div>
+
+          <!-- Company Navigation -->
+          <div>
+            <h4 class="footer-nav-title">Company</h4>
+            <ul class="footer-links-list">
+              <li><a href="#about" class="footer-link">About</a></li>
+              <li><a href="#faq" class="footer-link">FAQ</a></li>
+              <li><a href="/login" class="footer-link">Login</a></li>
+              <li><a href="/chat" class="footer-link">Try Normal Chat</a></li>
+            </ul>
+          </div>
+
+          <!-- App Links -->
+          <div>
+            <h4 class="footer-nav-title">Get Started</h4>
+            <ul class="footer-links-list">
+              <li><a href="/chat" class="footer-link">Open Web App</a></li>
+              <li><a href="/login" class="footer-link">Sign In</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <div>© 2026 Normal Chat</div>
+          
+          <div class="footer-status-indicator">
+            <span class="status-live-dot"></span>
+            <span>All systems normal</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>
