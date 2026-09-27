@@ -1222,7 +1222,7 @@ def home():
             BASE_DIR,
             "frontend"
         ),
-        "index.html"
+        "landing.html"
     )
 
 
