@@ -1805,9 +1805,19 @@ def generate_ai_reply(
 
 @app.route(
     "/chat",
-    methods=["POST"]
+    methods=["GET", "POST"]
 )
 def chat():
+
+    if request.method == "GET":
+
+        return send_from_directory(
+            os.path.join(
+                BASE_DIR,
+                "frontend"
+            ),
+            "chat.html"
+        )
 
     username = session.get(
         "username"
