@@ -1224,7 +1224,52 @@ def home():
         ),
         "landing.html"
     )
+@app.route("/styles.css")
+def styles():
+    return send_from_directory(
+        os.path.join(
+            BASE_DIR,
+            "frontend"
+        ),
+        "styles.css",
+        mimetype="text/css"
+    )
 
+
+@app.route("/script.js")
+def script():
+    return send_from_directory(
+        os.path.join(
+            BASE_DIR,
+            "frontend"
+        ),
+        "script.js",
+        mimetype="application/javascript"
+    )
+@app.route("/sitemap.xml")
+def sitemap():
+
+    return send_from_directory(
+        os.path.join(
+            BASE_DIR,
+            "frontend"
+        ),
+        "sitemap.xml",
+        mimetype="application/xml"
+    )
+
+
+@app.route("/robots.txt")
+def robots():
+
+    return send_from_directory(
+        os.path.join(
+            BASE_DIR,
+            "frontend"
+        ),
+        "robots.txt",
+        mimetype="text/plain"
+    )
 
 # ==========================================
 # HEALTH CHECK
