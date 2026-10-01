@@ -23,7 +23,8 @@ from flask import (
     send_from_directory,
     session,
     Response,
-    stream_with_context
+    stream_with_context,
+    redirect
 )
 
 from google import genai
@@ -932,7 +933,7 @@ def create_razorpay_payment_link(username):
 
 @app.route(
     "/create-pro-payment",
-    methods=["POST"]
+    methods=["GET", "POST"]
 )
 def create_pro_payment():
 
@@ -997,15 +998,18 @@ def create_pro_payment():
         finally:
             conn.close()
 
+        if request.method == "GET":
+           return redirect(short_url)
+
         return jsonify({
-            "message": "Payment link created",
-            "payment_link_id": payment_link_id,
-            "payment_url": short_url,
-            "amount": 299,
-            "currency": "INR",
-            "plan": "Normal Pro",
-            "duration_days": PRO_DAYS
-        }), 200
+    "message": "Payment link created",
+    "payment_link_id": payment_link_id,
+    "payment_url": short_url,
+    "amount": 299,
+    "currency": "INR",
+    "plan": "Normal Pro",
+    "duration_days": PRO_DAYS
+}), 200
 
     except Exception as error:
 
