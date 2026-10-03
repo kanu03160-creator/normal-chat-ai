@@ -888,14 +888,31 @@ def razorpay_auth_header():
 
 def create_razorpay_payment_link(username):
 
+    username = str(username or "").strip()
+
+    if not username:
+        raise ValueError("Username is required")
+
+    # Razorpay reference_id is kept short and URL/API-safe.
+    # This avoids failures when a username contains spaces or special characters.
+    username_hash = hashlib.sha256(
+        username.encode("utf-8")
+    ).hexdigest()[:10]
+
+    reference_id = (
+        f"normalchat-{int(datetime.now().timestamp())}-{username_hash}"
+    )[:40]
+
+    customer_name = username[:100]
+
     payload = {
         "amount": PRO_AMOUNT_PAISE,
         "currency": "INR",
         "accept_partial": False,
         "description": "Normal Chat Pro - 30 days",
-        "reference_id": f"normalchat-{username}-{int(datetime.now().timestamp())}",
+        "reference_id": reference_id,
         "customer": {
-            "name": username
+            "name": customer_name
         },
         "notify": {
             "sms": False,
@@ -903,11 +920,21 @@ def create_razorpay_payment_link(username):
         },
         "reminder_enable": True,
         "notes": {
-            "normal_chat_username": username,
+            "normal_chat_username": username[:200],
             "plan": "normal_pro",
             "duration_days": str(PRO_DAYS)
         }
     }
+
+    print(
+        "RAZORPAY PAYMENT LINK REQUEST:",
+        {
+            "amount": payload["amount"],
+            "currency": payload["currency"],
+            "reference_id": payload["reference_id"],
+            "username": username
+        }
+    )
 
     body = json.dumps(payload).encode("utf-8")
 
@@ -917,18 +944,58 @@ def create_razorpay_payment_link(username):
         method="POST",
         headers={
             "Authorization": razorpay_auth_header(),
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Accept": "application/json"
         }
     )
 
-    with urllib.request.urlopen(
-        request_obj,
-        timeout=20
-    ) as response:
+    try:
+        with urllib.request.urlopen(
+            request_obj,
+            timeout=20
+        ) as response:
 
-        return json.loads(
-            response.read().decode("utf-8")
+            response_body = response.read().decode(
+                "utf-8",
+                errors="replace"
+            )
+
+            return json.loads(response_body)
+
+    except urllib.error.HTTPError as error:
+        error_body = error.read().decode(
+            "utf-8",
+            errors="replace"
         )
+
+        print(
+            "========== RAZORPAY API ERROR =========="
+        )
+        print(
+            "HTTP STATUS:",
+            error.code
+        )
+        print(
+            "RESPONSE:",
+            error_body
+        )
+        print(
+            "========================================"
+        )
+
+        raise RuntimeError(
+            f"Razorpay payment link API returned HTTP {error.code}"
+        ) from error
+
+    except urllib.error.URLError as error:
+        print(
+            "RAZORPAY NETWORK ERROR:",
+            repr(error)
+        )
+
+        raise RuntimeError(
+            "Razorpay API connection failed"
+        ) from error
 
 
 @app.route(
@@ -1253,12 +1320,16 @@ def script():
 @app.route("/sitemap.xml")
 def sitemap():
 
-    return send_from_directory(
-        os.path.join(
-            BASE_DIR,
-            "frontend"
-        ),
-        "sitemap.xml",
+    sitemap_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://normal-chat-ai.onrender.com/</loc>
+    </url>
+</urlset>
+"""
+
+    return Response(
+        sitemap_xml,
         mimetype="application/xml"
     )
 
@@ -1266,12 +1337,14 @@ def sitemap():
 @app.route("/robots.txt")
 def robots():
 
-    return send_from_directory(
-        os.path.join(
-            BASE_DIR,
-            "frontend"
-        ),
-        "robots.txt",
+    robots_txt = """User-agent: *
+Allow: /
+
+Sitemap: https://normal-chat-ai.onrender.com/sitemap.xml
+"""
+
+    return Response(
+        robots_txt,
         mimetype="text/plain"
     )
 
