@@ -805,12 +805,12 @@
               </ul>
 
               <div class="pricing-cta-box">
-                <a href="/chat" class="btn btn-primary" style="width: 100%;">
+                <button type="button" id="upgradeProButton" class="btn btn-primary" style="width: 100%;">
                   <span>Upgrade to Pro</span>
                   <span class="btn-icon-right" aria-hidden="true">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                   </span>
-                </a>
+                </button>
               </div>
             </div>
 
@@ -1098,5 +1098,43 @@
 
   <!-- JavaScript -->
   <script src="script.js"></script>
+
+<script>
+(function () {
+  const button = document.getElementById("upgradeProButton");
+  if (!button) return;
+
+  button.addEventListener("click", async function () {
+    const original = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = "<span>Creating payment link...</span>";
+
+    try {
+      const response = await fetch("/create-pro-payment", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" }
+      });
+
+      const data = await response.json();
+
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+
+      if (!response.ok || !data.payment_url) {
+        throw new Error(data.error || "Payment link create nahi ho paya.");
+      }
+
+      window.location.href = data.payment_url;
+    } catch (error) {
+      alert(error.message || "Payment link create nahi ho paya.");
+      button.disabled = false;
+      button.innerHTML = original;
+    }
+  });
+})();
+</script>
 </body>
 </html>
