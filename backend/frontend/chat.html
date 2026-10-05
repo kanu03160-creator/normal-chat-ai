@@ -5541,9 +5541,13 @@ archiveButton.addEventListener(
         ========================= */
 
         sendButton.addEventListener(
-            "click",
-            sendMessage
-        );
+    "click",
+    function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        sendMessage();
+    }
+);
 
         stopButton.addEventListener(
             "click",
